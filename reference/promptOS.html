@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptOS</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(15px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .animate-fade-slide {
+      animation: fadeSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .dark .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Utility to hide elements */
+    .hidden-force { display: none !important; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-sans selection:bg-indigo-200 dark:selection:bg-indigo-900 transition-colors duration-300">
+  
+  <!-- BACKGROUND AMBIENCE -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-indigo-400/10 dark:bg-indigo-600/10 blur-[120px]"></div>
+    <div class="absolute top-[60%] -right-[10%] w-[40%] h-[60%] rounded-full bg-emerald-400/10 dark:bg-emerald-600/10 blur-[120px]"></div>
+  </div>
+
+  <div class="relative z-10 flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-72 border-r border-slate-200/50 dark:border-slate-800/50 glass-panel flex flex-col z-20">
+      <div class="p-6 pb-2">
+        <div class="flex items-center justify-between mb-8">
+          <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-xl tracking-tight">
+            <div class="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl">
+              <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
+            </div>
+            PromptOS
+          </div>
+          <span id="adminBadge" class="hidden-force items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-600 dark:bg-red-500/20 px-2 py-1 rounded-full animate-fade-slide">
+            <i data-lucide="unlock" class="w-3 h-3"></i> Admin
+          </span>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">Library</p>
+          <div id="categoryList">
+            <!-- Categories rendered here -->
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 pt-4 flex-1 overflow-y-auto no-scrollbar">
+         <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">Popular Tags</p>
+         <div id="tagList" class="flex flex-wrap gap-2 px-2">
+           <!-- Tags rendered here -->
+         </div>
+      </div>
+
+      <div class="p-6 border-t border-slate-200/50 dark:border-slate-800/50 mt-auto flex gap-2">
+        <button id="themeToggleBtn" class="flex-shrink-0 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-500 hover:border-indigo-400 transition-all">
+          <i data-lucide="moon" class="w-4 h-4 dark:hidden-force"></i>
+          <i data-lucide="sun" class="w-4 h-4 hidden-force dark:block"></i>
+        </button>
+        <button id="cmdKBtn" class="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-500 hover:border-indigo-400 transition-all group">
+          <span class="flex items-center gap-2">
+            <i data-lucide="command" class="w-4 h-4 text-slate-400 group-hover:text-indigo-500"></i>
+            Command Menu
+          </span>
+          <kbd class="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">⌘K</kbd>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <!-- TOPBAR -->
+      <header class="px-8 py-6 flex items-center justify-between z-10 glass-panel border-b-0 border-r-0 border-l-0">
+        <div class="relative w-full max-w-lg group">
+          <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-indigo-500 transition-colors"></i>
+          <input 
+            type="text"
+            id="searchInput"
+            placeholder="Search prompts, shortcuts, or tags..."
+            class="w-full pl-12 pr-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-2xl focus:bg-white dark:focus:bg-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm backdrop-blur-md shadow-sm"
+          />
+        </div>
+        
+        <button id="newPromptBtn" class="hidden-force ml-4 items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-3 rounded-2xl text-sm font-semibold shadow-xl shadow-slate-900/10 dark:shadow-white/10 hover:scale-105 active:scale-95 transition-all">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">New Prompt</span>
+        </button>
+      </header>
+
+      <!-- GRID -->
+      <div class="flex-1 overflow-y-auto p-8 no-scrollbar scroll-smooth">
+        <div class="mb-8">
+          <h1 id="viewTitle" class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">All</h1>
+          <p id="viewCount" class="text-slate-500 mt-2">0 prompts available</p>
+        </div>
+
+        <div id="promptGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-max">
+          <!-- Prompts rendered here -->
+        </div>
+
+        <div id="emptyState" class="hidden-force flex flex-col items-center justify-center h-64 text-center animate-fade-slide">
+          <div class="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+            <i data-lucide="search" class="w-8 h-8 text-slate-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Nothing found</h3>
+          <p class="text-slate-500 mt-1 max-w-sm">We couldn't find any prompts matching your criteria.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- OVERLAYS -->
+  
+  <!-- VIEW PROMPT MODAL -->
+  <div id="viewModalOverlay" class="hidden-force fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-full border border-slate-200 dark:border-slate-800 animate-fade-slide" onclick="event.stopPropagation()">
+      <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-slate-50/50 dark:bg-slate-900/50">
+        <div>
+          <span id="viewModalCategory" class="inline-block px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-bold mb-3">Category</span>
+          <h2 id="viewModalTitle" class="text-2xl font-bold text-slate-900 dark:text-white mb-2">Title</h2>
+          <p id="viewModalDesc" class="text-sm text-slate-500">Description</p>
+        </div>
+        <button class="close-modal-btn p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-full transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <div class="p-8 overflow-y-auto">
+        <div class="bg-slate-900 rounded-2xl p-6 relative group border border-slate-800">
+          <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button class="copy-btn copy-btn-small p-2 bg-slate-800 text-slate-400 hover:text-white hover:bg-indigo-500 rounded-xl transition-all" data-copy-target="viewModalBody">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <pre id="viewModalBody" class="font-mono text-sm text-indigo-300 whitespace-pre-wrap leading-relaxed">Body</pre>
+        </div>
+      </div>
+
+      <div class="px-8 py-6 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+         <div id="viewModalTags" class="flex gap-2"></div>
+         <div class="w-48">
+           <button class="copy-btn w-full px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-medium rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2" data-copy-target="viewModalBody">
+             <i data-lucide="copy" class="w-4 h-4"></i> Copy Prompt
+           </button>
+         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT/CREATE MODAL -->
+  <div id="formModalOverlay" class="hidden-force fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-3xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800 animate-fade-slide" onclick="event.stopPropagation()">
+      <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+        <h2 id="formModalHeader" class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i> Create Prompt
+        </h2>
+        <button class="close-modal-btn p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      
+      <form id="promptForm" class="p-8 overflow-y-auto flex-1 space-y-6">
+        <input type="hidden" id="formId" name="id">
+        <div class="grid grid-cols-2 gap-6">
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Title</label>
+            <input id="formTitle" name="title" required class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white" placeholder="e.g., Code Review Template">
+          </div>
+          
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Description</label>
+            <input id="formDesc" name="description" required class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white" placeholder="Short description for the grid...">
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Category</label>
+            <input id="formCategory" name="category" required class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white">
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Shortcut</label>
+            <input id="formShortcut" name="shortcut" required class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white font-mono" placeholder="/shortcut">
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Tags (Comma Separated)</label>
+            <input id="formTags" name="tags" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none text-slate-900 dark:text-white" placeholder="react, web, template">
+          </div>
+
+          <div class="col-span-2">
+            <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Prompt Body</label>
+            <textarea id="formBody" name="body" required rows="6" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm text-slate-900 dark:text-white resize-y" placeholder="Act as a..."></textarea>
+          </div>
+        </div>
+
+        <div class="pt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" class="close-modal-btn px-6 py-3 font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+          <button type="submit" class="px-6 py-3 font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-500/30">Save Prompt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- COMMAND PALETTE MODAL -->
+  <div id="cmdKModalOverlay" class="hidden-force fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-fade-slide" onclick="event.stopPropagation()">
+       <div class="flex items-center px-4 border-b border-slate-100 dark:border-slate-800">
+         <i data-lucide="search" class="w-5 h-5 text-indigo-500"></i>
+         <input 
+           type="text"
+           id="cmdKInput"
+           class="w-full bg-transparent border-0 px-4 py-5 outline-none text-slate-900 dark:text-white placeholder:text-slate-400 text-lg"
+           placeholder="Search prompts or type a command..."
+         />
+         <kbd class="hidden sm:inline-block font-mono text-[10px] text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">ESC</kbd>
+       </div>
+       <div class="max-h-[60vh] overflow-y-auto p-2">
+         <div id="cmdKResults" class="space-y-1">
+           <!-- Results injected here -->
+         </div>
+       </div>
+    </div>
+  </div>
+
+  <!-- CONFIG MODAL (GitHub Settings) -->
+  <div id="configModalOverlay" class="hidden-force fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200 dark:border-slate-800 animate-fade-slide" onclick="event.stopPropagation()">
+      <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="github" class="w-5 h-5"></i> GitHub Config
+        </h2>
+        <button class="close-modal-btn p-2 bg-slate-100 dark:bg-slate-800 rounded-full"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <form id="configForm" class="p-8 space-y-4">
+        <p class="text-sm text-slate-500 mb-4">Store your Personal Access Token locally. Nothing is saved to the server.</p>
+        <div>
+          <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">GitHub PAT</label>
+          <input name="token" type="password" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 outline-none text-slate-900 dark:text-white">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Owner</label><input name="owner" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 outline-none text-slate-900 dark:text-white"></div>
+          <div><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Repo</label><input name="repo" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 outline-none text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Branch</label><input name="branch" value="main" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 outline-none text-slate-900 dark:text-white"></div>
+          <div><label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Path</label><input name="path" value="prompts.json" required class="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 outline-none text-slate-900 dark:text-white"></div>
+        </div>
+        <div class="pt-4 flex justify-end gap-3">
+          <button type="submit" class="px-6 py-2 font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">Save Config</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastRegion" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-2"></div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+    // --- STATE ---
+    const ADMIN_PASSWORD = "shift-am-owner";
+    const PROMPTS_URL = "./prompts.json";
+    
+    // Fallback data if local fetch fails (e.g. running outside local server)
+    const DEFAULT_PROMPTS = [
+      { id: 'meeting-notes-001', title: 'Zoom Meeting Notes', description: 'Generates structured meeting notes from a Zoom transcript for internal team use.', body: "You are a project manager's assistant. Summarize the transcript into clear meeting notes...", tags: ['meetings', 'project-management'], category: 'Work', shortcut: '/meetingnotes' },
+      { id: 'code-review-002', title: 'Senior React Review', description: 'Deep-dive code review focusing on performance and modern hook usage.', body: 'Act as a Senior React Developer...', tags: ['react', 'code'], category: 'Engineering', shortcut: '/reactreview' }
+    ];
+
+    const state = {
+      prompts: [],
+      search: "",
+      selectedCategory: "All",
+      adminUnlocked: sessionStorage.getItem("prompt-admin") === "true",
+      githubConfig: JSON.parse(localStorage.getItem("prompt-github") || "null"),
+      keySequence: [],
+      theme: localStorage.getItem('theme') || 'light'
+    };
+
+    // --- DOM ELEMENTS ---
+    const els = {
+      promptGrid: document.getElementById('promptGrid'),
+      categoryList: document.getElementById('categoryList'),
+      tagList: document.getElementById('tagList'),
+      searchInput: document.getElementById('searchInput'),
+      cmdKInput: document.getElementById('cmdKInput'),
+      cmdKResults: document.getElementById('cmdKResults'),
+      viewTitle: document.getElementById('viewTitle'),
+      viewCount: document.getElementById('viewCount'),
+      emptyState: document.getElementById('emptyState'),
+      adminBadge: document.getElementById('adminBadge'),
+      newPromptBtn: document.getElementById('newPromptBtn'),
+      
+      // Modals
+      viewModal: document.getElementById('viewModalOverlay'),
+      formModal: document.getElementById('formModalOverlay'),
+      cmdKModal: document.getElementById('cmdKModalOverlay'),
+      configModal: document.getElementById('configModalOverlay'),
+      
+      // Theme
+      themeToggleBtn: document.getElementById('themeToggleBtn')
+    };
+
+    // --- INIT ---
+    async function init() {
+      applyTheme();
+      try {
+        const res = await fetch(PROMPTS_URL, { cache: "no-store" });
+        if(!res.ok) throw new Error("Failed");
+        state.prompts = await res.json();
+      } catch (e) {
+        state.prompts = DEFAULT_PROMPTS; // Fallback
+        showToast("Using sample data. Could not fetch prompts.json.", "warning");
+      }
+      
+      bindEvents();
+      renderAll();
+      lucide.createIcons();
+    }
+
+    // --- RENDER LOGIC ---
+    function renderAll() {
+      const filtered = getFilteredPrompts();
+      
+      // Header
+      els.viewTitle.textContent = state.selectedCategory;
+      els.viewCount.textContent = `${filtered.length} prompts available`;
+      
+      // Grid
+      els.promptGrid.innerHTML = '';
+      if (filtered.length === 0) {
+        els.emptyState.classList.remove('hidden-force');
+      } else {
+        els.emptyState.classList.add('hidden-force');
+        filtered.forEach((prompt, i) => els.promptGrid.appendChild(createPromptCard(prompt, i)));
+      }
+
+      // Sidebar
+      renderCategories();
+      renderTags();
+
+      // Admin State
+      if(state.adminUnlocked) {
+        els.adminBadge.classList.remove('hidden-force');
+        els.adminBadge.classList.add('flex');
+        els.newPromptBtn.classList.remove('hidden-force');
+        els.newPromptBtn.classList.add('flex');
+      }
+
+      lucide.createIcons();
+    }
+
+    function getFilteredPrompts() {
+      return state.prompts.filter(p => {
+        const searchLower = state.search.toLowerCase();
+        const matchesSearch = 
+          (p.title || '').toLowerCase().includes(searchLower) || 
+          (p.description || '').toLowerCase().includes(searchLower) ||
+          (p.shortcut || '').toLowerCase().includes(searchLower) ||
+          (p.tags || []).some(t => t.toLowerCase().includes(searchLower));
+        const matchesCat = state.selectedCategory === 'All' || p.category === state.selectedCategory;
+        return matchesSearch && matchesCat;
+      });
+    }
+
+    function createPromptCard(prompt, index) {
+      const div = document.createElement('div');
+      div.className = "group bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-3xl border border-slate-200/60 dark:border-slate-800/60 p-1 cursor-pointer hover:shadow-2xl hover:shadow-indigo-500/5 dark:hover:shadow-indigo-500/10 hover:-translate-y-1 transition-all duration-300 animate-fade-slide";
+      div.style.animationDelay = `${index * 0.05}s`;
+      
+      const adminHtml = state.adminUnlocked ? `
+        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0 duration-300">
+          <button class="edit-btn p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 rounded-xl transition-colors"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>
+          <button class="delete-btn p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-xl transition-colors"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+        </div>
+      ` : '';
+
+      div.innerHTML = `
+        <div class="h-full bg-white dark:bg-slate-900 rounded-[22px] p-6 flex flex-col relative overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          
+          <div class="flex justify-between items-start mb-4">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold tracking-wide">
+              <i data-lucide="terminal" class="w-3 h-3"></i> ${prompt.shortcut || ''}
+            </span>
+            ${adminHtml}
+          </div>
+
+          <h3 class="font-bold text-xl text-slate-900 dark:text-white leading-tight mb-2 pr-8 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+            ${prompt.title}
+          </h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 flex-1 mb-6 leading-relaxed">
+            ${prompt.description || ''}
+          </p>
+          
+          <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-100 dark:border-slate-800/50">
+            <div class="flex -space-x-1 overflow-hidden">
+               ${(prompt.tags || []).slice(0,3).map((t, i) => `<span class="inline-block px-2.5 py-1 text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg border border-white dark:border-slate-900 relative z-[1]" style="z-index:${3-i}">${t}</span>`).join('')}
+            </div>
+            <button class="copy-btn p-2 bg-slate-100 hover:bg-indigo-600 text-slate-500 hover:text-white dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-indigo-500 rounded-xl transition-all" data-text="${encodeURIComponent(prompt.body)}">
+              <i data-lucide="copy" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      `;
+
+      // Events
+      div.addEventListener('click', () => openViewModal(prompt));
+      div.querySelector('.copy-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleCopy(decodeURIComponent(e.currentTarget.dataset.text), e.currentTarget);
+      });
+      if(state.adminUnlocked) {
+        div.querySelector('.edit-btn').addEventListener('click', (e) => { e.stopPropagation(); openFormModal(prompt); });
+        div.querySelector('.delete-btn').addEventListener('click', (e) => { e.stopPropagation(); deletePrompt(prompt.id); });
+      }
+
+      return div;
+    }
+
+    function renderCategories() {
+      const cats = ['All', ...new Set(state.prompts.map(p => p.category).filter(Boolean))];
+      els.categoryList.innerHTML = cats.map(c => `
+        <button onclick="setCategory('${c}')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+          state.selectedCategory === c 
+            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 scale-[1.02]' 
+            : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:scale-[1.02]'
+        }">
+          <span class="flex items-center gap-2"><i data-lucide="${c==='All' ? 'layers' : 'folder'}" class="w-4 h-4"></i> ${c}</span>
+          ${c === 'All' ? `<span class="py-0.5 px-2 rounded-full text-[10px] ${state.selectedCategory === c ? 'bg-indigo-500 text-white' : 'bg-slate-200 dark:bg-slate-800'}">${state.prompts.length}</span>` : ''}
+        </button>
+      `).join('');
+    }
+
+    function renderTags() {
+      const allTags = [...new Set(state.prompts.flatMap(p => p.tags || []))].slice(0, 15);
+      els.tagList.innerHTML = allTags.map(t => `
+        <button onclick="setSearch('${t}')" class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          #${t}
+        </button>
+      `).join('');
+    }
+
+    // --- ACTIONS ---
+    function setCategory(cat) { state.selectedCategory = cat; renderAll(); }
+    function setSearch(q) { state.search = q; els.searchInput.value = q; renderAll(); }
+
+    function openViewModal(prompt) {
+      document.getElementById('viewModalCategory').textContent = prompt.category;
+      document.getElementById('viewModalTitle').textContent = prompt.title;
+      document.getElementById('viewModalDesc').textContent = prompt.description;
+      document.getElementById('viewModalBody').textContent = prompt.body;
+      document.getElementById('viewModalTags').innerHTML = (prompt.tags||[]).map(t => `<span class="text-xs font-medium text-slate-500 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">#${t}</span>`).join('');
+      
+      els.viewModal.classList.remove('hidden-force');
+    }
+
+    function openFormModal(prompt = null) {
+      const isEdit = !!prompt;
+      document.getElementById('formModalHeader').innerHTML = `<i data-lucide="sparkles" class="w-5 h-5 text-indigo-500"></i> ${isEdit ? 'Edit' : 'Create'} Prompt`;
+      document.getElementById('formId').value = isEdit ? prompt.id : `prompt-${Date.now()}`;
+      document.getElementById('formTitle').value = isEdit ? prompt.title : '';
+      document.getElementById('formDesc').value = isEdit ? prompt.description : '';
+      document.getElementById('formCategory').value = isEdit ? prompt.category : 'General';
+      document.getElementById('formShortcut').value = isEdit ? prompt.shortcut : '/';
+      document.getElementById('formTags').value = isEdit ? (prompt.tags||[]).join(', ') : '';
+      document.getElementById('formBody').value = isEdit ? prompt.body : '';
+      
+      els.formModal.classList.remove('hidden-force');
+      lucide.createIcons();
+    }
+
+    // --- EVENTS ---
+    function bindEvents() {
+      els.searchInput.addEventListener('input', e => { state.search = e.target.value; renderAll(); });
+      
+      document.getElementById('cmdKBtn').addEventListener('click', openCmdK);
+      els.newPromptBtn.addEventListener('click', () => openFormModal());
+      
+      // Modal closing
+      document.querySelectorAll('.close-modal-btn, .fixed.inset-0').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target === el || el.classList.contains('close-modal-btn')) {
+            document.querySelectorAll('.fixed.inset-0').forEach(m => m.classList.add('hidden-force'));
+          }
+        });
+      });
+
+      // CmdK Search
+      els.cmdKInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        let results = state.prompts;
+        if(q) results = state.prompts.filter(p => (p.title||'').toLowerCase().includes(q) || (p.shortcut||'').toLowerCase().includes(q));
+        
+        els.cmdKResults.innerHTML = '<div class="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Prompts</div>' + 
+          results.slice(0, 6).map(p => `
+            <button onclick='window.cmdSelect("${p.id}")' class="w-full flex items-center justify-between p-3 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-left group transition-colors">
+               <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-indigo-600 transition-colors">
+                    <i data-lucide="terminal" class="w-3 h-3"></i>
+                  </div>
+                  <div>
+                    <div class="text-slate-900 dark:text-white font-medium">${p.title}</div>
+                  </div>
+               </div>
+               <span class="text-xs font-mono text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">${p.shortcut}</span>
+            </button>
+          `).join('');
+        lucide.createIcons();
+      });
+
+      // Global Keys
+      document.addEventListener('keydown', e => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCmdK(); }
+        if (e.key === 'Escape') document.querySelectorAll('.fixed.inset-0').forEach(m => m.classList.add('hidden-force'));
+        
+        // Admin sequence
+        if (e.key) {
+          state.keySequence.push(e.key.toLowerCase());
+          if (state.keySequence.length > 3) state.keySequence.shift();
+          if (e.shiftKey && state.keySequence.includes('a') && state.keySequence.includes('m')) {
+            toggleAdmin();
+            state.keySequence = [];
+          }
+        }
+      });
+
+      // Theme
+      els.themeToggleBtn.addEventListener('click', () => {
+        state.theme = state.theme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', state.theme);
+        applyTheme();
+      });
+
+      // View Modal Copy Buttons
+      document.querySelectorAll('[data-copy-target]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const targetId = e.currentTarget.dataset.copyTarget;
+          const text = document.getElementById(targetId).textContent;
+          handleCopy(text, e.currentTarget);
+        });
+      });
+
+      // Forms
+      document.getElementById('promptForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if(!ensureConfig()) return;
+        
+        const fd = new FormData(e.target);
+        const newPrompt = {
+          id: fd.get('id'), title: fd.get('title'), description: fd.get('description'),
+          category: fd.get('category'), shortcut: fd.get('shortcut'), body: fd.get('body'),
+          tags: fd.get('tags').split(',').map(t=>t.trim()).filter(Boolean),
+          dateAdded: new Date().toISOString().split('T')[0]
+        };
+
+        const existingIdx = state.prompts.findIndex(p => p.id === newPrompt.id);
+        const nextPrompts = [...state.prompts];
+        if(existingIdx >= 0) nextPrompts[existingIdx] = newPrompt;
+        else nextPrompts.unshift(newPrompt);
+
+        await persist(nextPrompts, "Prompt Saved.");
+        els.formModal.classList.add('hidden-force');
+      });
+
+      document.getElementById('configForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        state.githubConfig = Object.fromEntries(fd.entries());
+        localStorage.setItem("prompt-github", JSON.stringify(state.githubConfig));
+        els.configModal.classList.add('hidden-force');
+        showToast("GitHub config saved.");
+      });
+    }
+
+    // --- UTILS & HELPERS ---
+    function openCmdK() {
+      els.cmdKModal.classList.remove('hidden-force');
+      els.cmdKInput.value = '';
+      els.cmdKInput.dispatchEvent(new Event('input')); // trigger render
+      setTimeout(() => els.cmdKInput.focus(), 50);
+    }
+
+    window.cmdSelect = function(id) {
+      els.cmdKModal.classList.add('hidden-force');
+      const prompt = state.prompts.find(p => p.id === id);
+      if(prompt) openViewModal(prompt);
+    }
+
+    function toggleAdmin() {
+      if(state.adminUnlocked) {
+        state.adminUnlocked = false;
+        sessionStorage.setItem("prompt-admin", "false");
+        renderAll();
+        showToast("Admin Locked.");
+      } else {
+        const pw = prompt("Admin Password:");
+        if(pw === ADMIN_PASSWORD) {
+          state.adminUnlocked = true;
+          sessionStorage.setItem("prompt-admin", "true");
+          renderAll();
+          showToast("Admin Unlocked.", "success");
+          if(!state.githubConfig) els.configModal.classList.remove('hidden-force');
+        } else {
+          showToast("Incorrect password.", "error");
+        }
+      }
+    }
+
+    function applyTheme() {
+      if(state.theme === 'dark') document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+    }
+
+    function handleCopy(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHtml = btnElement.innerHTML;
+        btnElement.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i>`;
+        if(btnElement.classList.contains('copy-btn-small')) {
+           btnElement.classList.add('bg-emerald-500', 'text-white');
+           btnElement.classList.remove('bg-slate-100', 'text-slate-500', 'bg-slate-800', 'text-slate-400');
+        } else {
+           btnElement.innerHTML += ' Copied!';
+           btnElement.classList.add('bg-emerald-500');
+           btnElement.classList.remove('bg-slate-900', 'dark:bg-white');
+        }
+        lucide.createIcons();
+        setTimeout(() => {
+          btnElement.innerHTML = originalHtml;
+          btnElement.className = btnElement.className.replace('bg-emerald-500', '').replace('text-white', '');
+          lucide.createIcons();
+        }, 2000);
+      }).catch(err => {
+        // Fallback
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        showToast("Copied to clipboard");
+      });
+    }
+
+    function showToast(msg, type = "success") {
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-fade-slide text-white ${type === 'error' ? 'bg-red-500' : 'bg-slate-800 dark:bg-slate-100 dark:text-slate-900'}`;
+      toast.textContent = msg;
+      document.getElementById('toastRegion').appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // --- GITHUB API LOGIC ---
+    function ensureConfig() {
+      if (state.githubConfig && state.githubConfig.token) return true;
+      els.configModal.classList.remove('hidden-force');
+      showToast("GitHub config required.", "error");
+      return false;
+    }
+
+    async function deletePrompt(id) {
+      if(!confirm("Permanently delete this prompt?")) return;
+      const next = state.prompts.filter(p => p.id !== id);
+      await persist(next, "Prompt Deleted.");
+    }
+
+    async function persist(nextPrompts, msg) {
+      try {
+        const conf = state.githubConfig;
+        const endpoint = `https://api.github.com/repos/${conf.owner}/${conf.repo}/contents/${conf.path}`;
+        const headers = { Accept: "application/vnd.github+json", Authorization: `Bearer ${conf.token}`, "X-GitHub-Api-Version": "2022-11-28" };
+        
+        // 1. Get SHA
+        const res1 = await fetch(`${endpoint}?ref=${conf.branch}`, { headers });
+        const currentPayload = await res1.json();
+        if(!res1.ok) throw new Error(currentPayload.message || "Failed to read file.");
+
+        // 2. Write File
+        const contentStr = JSON.stringify(nextPrompts, null, 2);
+        const res2 = await fetch(endpoint, {
+          method: "PUT", headers,
+          body: JSON.stringify({
+            message: `Update prompts via PromptOS UI`,
+            content: btoa(unescape(encodeURIComponent(contentStr))),
+            sha: currentPayload.sha,
+            branch: conf.branch
+          })
+        });
+        
+        if(!res2.ok) throw new Error("Write failed.");
+        
+        state.prompts = nextPrompts;
+        renderAll();
+        showToast(msg);
+      } catch (e) {
+        showToast(e.message, "error");
+        console.error(e);
+      }
+    }
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
