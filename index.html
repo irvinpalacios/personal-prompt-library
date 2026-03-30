@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Prompt Library</title>
-  <meta name="description" content="A personal prompt library with search, filters, themes, and hidden admin tools.">
+  <title>PromptOS</title>
+  <meta name="description" content="A static prompt library with hidden admin tools, command search, and GitHub-backed editing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,134 +12,167 @@
 </head>
 <body>
   <div class="app-shell">
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
+    <div class="ambient ambient-indigo"></div>
+    <div class="ambient ambient-emerald"></div>
 
-    <header class="site-header" id="siteHeader">
-      <div class="brand-block">
-        <div class="brand-copy">
-          <p class="eyebrow">Creative System</p>
-          <h1>My Prompt Library</h1>
-          <p class="brand-subtitle">A static, searchable home for reusable prompts and shortcut snippets.</p>
-        </div>
-        <div class="admin-indicator" id="adminIndicator" aria-hidden="true">
-          <span class="admin-dot"></span>
-          <span>Admin mode</span>
-        </div>
-      </div>
-
-      <div class="header-controls">
-        <nav class="top-tabs" aria-label="Content sections">
-          <button class="tab-button is-active" type="button" data-tab="prompts">Prompts</button>
-          <button class="tab-button" type="button" data-tab="snippets" disabled aria-disabled="true">Snippets</button>
-          <button class="tab-button" type="button" data-tab="templates" disabled aria-disabled="true">Templates</button>
-        </nav>
-
-        <div class="toolbar">
-          <button class="toolbar-button wide" id="openPaletteButton" type="button">
-            <span>Command Palette</span>
-            <span class="kbd-hint">Ctrl/Cmd + K</span>
-          </button>
-          <div class="palette-switcher" id="paletteSwitcher" aria-label="Color palette switcher"></div>
-          <button class="toolbar-button icon-button" id="themeToggle" type="button" aria-label="Toggle light and dark mode">
-            <span id="themeToggleLabel">Dark</span>
-          </button>
-          <button class="toolbar-button icon-button" id="viewToggle" type="button" aria-label="Toggle grid and list view">
-            <span id="viewToggleLabel">List</span>
-          </button>
-          <button class="toolbar-button admin-only hidden" id="addPromptButton" type="button">Add Prompt</button>
-        </div>
-      </div>
-    </header>
-
-    <main class="content-area">
-      <section class="filter-panel">
-        <div class="filter-row">
-          <label class="field">
-            <span>Search</span>
-            <input id="searchInput" type="search" placeholder="Search titles, tags, categories, or shortcuts">
-          </label>
-          <label class="field field-select">
-            <span>Category</span>
-            <select id="categoryFilter">
-              <option value="">All categories</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="filter-row filter-row-tags">
-          <div class="tag-filter-block">
-            <span class="field-label">Tags</span>
-            <div id="tagFilters" class="chip-group" aria-label="Tag filters"></div>
+    <div class="layout-shell">
+      <aside class="sidebar glass-panel" id="sidebar">
+        <div class="sidebar-top">
+          <div class="brand-lockup">
+            <div class="brand-mark">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2L4 12h5l-1 10 8-10h-5l1-10z"></path>
+              </svg>
+            </div>
+            <div>
+              <p class="brand-kicker">Prompt System</p>
+              <h1>PromptOS</h1>
+            </div>
           </div>
-          <div class="results-summary">
-            <span id="promptCount">Showing 0 of 0 prompts</span>
+
+          <div class="sidebar-status">
+            <button class="ghost-button" id="themeToggle" type="button" aria-label="Toggle dark mode">
+              <span id="themeToggleLabel">Light</span>
+            </button>
+            <div class="admin-badge" id="adminIndicator" aria-hidden="true">
+              <span class="status-dot"></span>
+              <span>Admin</span>
+            </div>
           </div>
         </div>
-      </section>
 
-      <section class="library-panel">
-        <div class="library-grid" id="promptCollection" aria-live="polite"></div>
-      </section>
-    </main>
+        <section class="sidebar-section">
+          <p class="section-label">Library</p>
+          <div class="category-list" id="categoryList"></div>
+        </section>
+
+        <section class="sidebar-section sidebar-fill">
+          <p class="section-label">Popular Tags</p>
+          <div class="tag-list" id="tagList"></div>
+        </section>
+
+        <section class="sidebar-section sidebar-bottom">
+          <button class="command-button" id="openPaletteButton" type="button">
+            <span class="button-copy">
+              <span class="button-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 8h16v8H4z"></path>
+                  <path d="M9 4v16"></path>
+                  <path d="M15 4v16"></path>
+                </svg>
+              </span>
+              <span>Command Menu</span>
+            </span>
+            <kbd>Ctrl/Cmd + K</kbd>
+          </button>
+        </section>
+      </aside>
+
+      <main class="main-shell">
+        <header class="topbar glass-panel">
+          <div class="search-wrap">
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="6"></circle>
+                <path d="M20 20l-4.2-4.2"></path>
+              </svg>
+            </span>
+            <input id="searchInput" type="search" placeholder="Search prompts, shortcuts, or descriptions...">
+          </div>
+
+          <div class="topbar-actions">
+            <button class="ghost-button admin-only hidden" id="configButton" type="button">GitHub Config</button>
+            <button class="primary-button admin-only hidden" id="addPromptButton" type="button">
+              <span class="plus-symbol">+</span>
+              <span>New Prompt</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="content-shell">
+          <div class="content-heading">
+            <div>
+              <h2 id="currentCategoryTitle">All</h2>
+              <p id="promptCount">0 prompts available</p>
+            </div>
+          </div>
+
+          <div class="card-grid" id="promptCollection" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
   </div>
 
   <div class="overlay hidden" id="promptModalOverlay" aria-hidden="true">
     <div class="modal prompt-modal" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
-      <button class="modal-close" type="button" data-close="promptModalOverlay" aria-label="Close prompt details">×</button>
-      <div class="modal-content" id="promptModalContent"></div>
+      <button class="modal-close" type="button" data-close="promptModalOverlay" aria-label="Close prompt details">&times;</button>
+      <div class="modal-body" id="promptModalContent"></div>
     </div>
   </div>
 
   <div class="overlay hidden" id="formModalOverlay" aria-hidden="true">
     <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
-      <button class="modal-close" type="button" data-close="formModalOverlay" aria-label="Close prompt form">×</button>
-      <div class="modal-content">
-        <h2 id="formModalTitle">Add Prompt</h2>
+      <button class="modal-close" type="button" data-close="formModalOverlay" aria-label="Close prompt form">&times;</button>
+      <div class="modal-body">
+        <div class="modal-header">
+          <div>
+            <p class="section-label modal-kicker">Prompt Builder</p>
+            <h2 id="formModalTitle">Create Prompt</h2>
+          </div>
+        </div>
+
         <form id="promptForm" class="prompt-form">
-          <label class="field">
-            <span>Prompt ID</span>
-            <input name="id" required placeholder="meeting-notes-001">
-          </label>
-          <label class="field">
-            <span>Title</span>
-            <input name="title" required placeholder="Zoom Meeting Notes">
-          </label>
-          <label class="field">
-            <span>Description</span>
-            <textarea name="description" rows="2" required placeholder="Short summary for cards and search"></textarea>
-          </label>
-          <label class="field">
-            <span>Body</span>
-            <textarea name="body" rows="9" required placeholder="Full prompt text"></textarea>
-          </label>
           <div class="form-grid">
             <label class="field">
-              <span>Category</span>
-              <input name="category" required placeholder="Work">
+              <span>Prompt ID</span>
+              <input name="id" required placeholder="meeting-notes-001">
             </label>
             <label class="field">
               <span>Shortcut</span>
               <input name="shortcut" required placeholder="/meetingnotes">
             </label>
           </div>
+
+          <label class="field">
+            <span>Title</span>
+            <input name="title" required placeholder="Zoom Meeting Notes">
+          </label>
+
+          <label class="field">
+            <span>Description</span>
+            <textarea name="description" rows="2" required placeholder="Short description for cards and command search"></textarea>
+          </label>
+
           <div class="form-grid">
+            <label class="field">
+              <span>Category</span>
+              <input name="category" required placeholder="Work">
+            </label>
             <label class="field">
               <span>Tags</span>
               <input name="tags" required placeholder="meetings, project-management, internal">
             </label>
+          </div>
+
+          <div class="form-grid">
             <label class="field">
               <span>Date Added</span>
               <input name="dateAdded" type="date" required>
             </label>
+            <label class="field">
+              <span>Last Updated</span>
+              <input name="lastUpdated" type="date">
+            </label>
           </div>
+
           <label class="field">
-            <span>Last Updated</span>
-            <input name="lastUpdated" type="date">
+            <span>Prompt Body</span>
+            <textarea name="body" rows="10" required placeholder="Act as a..."></textarea>
           </label>
+
           <div class="form-actions">
-            <button class="toolbar-button" type="button" data-close="formModalOverlay">Cancel</button>
-            <button class="toolbar-button primary" id="savePromptButton" type="submit">Save Prompt</button>
+            <button class="ghost-button" type="button" data-close="formModalOverlay">Cancel</button>
+            <button class="primary-button" id="savePromptButton" type="submit">Save Prompt</button>
           </div>
         </form>
       </div>
@@ -148,44 +181,18 @@
 
   <div class="overlay hidden" id="confirmModalOverlay" aria-hidden="true">
     <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-      <button class="modal-close" type="button" data-close="confirmModalOverlay" aria-label="Close confirmation">×</button>
-      <div class="modal-content">
-        <h2 id="confirmModalTitle">Delete Prompt</h2>
-        <p id="confirmModalText">Are you sure you want to delete this prompt?</p>
-        <div class="form-actions">
-          <button class="toolbar-button" type="button" data-close="confirmModalOverlay">Cancel</button>
-          <button class="toolbar-button danger" id="confirmDeleteButton" type="button">Delete</button>
+      <button class="modal-close" type="button" data-close="confirmModalOverlay" aria-label="Close delete prompt">&times;</button>
+      <div class="modal-body">
+        <div class="modal-header">
+          <div>
+            <p class="section-label modal-kicker">Delete Prompt</p>
+            <h2 id="confirmModalTitle">Remove Prompt</h2>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="overlay hidden" id="commandPaletteOverlay" aria-hidden="true">
-    <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="commandPaletteTitle">
-      <div class="command-header">
-        <h2 id="commandPaletteTitle">Command Palette</h2>
-        <span class="kbd-hint">Esc to close</span>
-      </div>
-      <label class="field command-search">
-        <span class="sr-only">Search prompts</span>
-        <input id="commandPaletteInput" type="search" placeholder="Search prompts, tags, categories, or shortcuts">
-      </label>
-      <div class="command-results" id="commandPaletteResults" role="listbox" aria-label="Prompt results"></div>
-    </div>
-  </div>
-
-  <div class="overlay hidden" id="helpOverlay" aria-hidden="true">
-    <div class="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="helpOverlayTitle">
-      <button class="modal-close" type="button" data-close="helpOverlay" aria-label="Close keyboard shortcuts">×</button>
-      <div class="modal-content">
-        <h2 id="helpOverlayTitle">Keyboard Shortcuts</h2>
-        <div class="shortcuts-grid">
-          <div><kbd>Ctrl/Cmd + K</kbd><span>Open command palette</span></div>
-          <div><kbd>Esc</kbd><span>Close modal or overlay</span></div>
-          <div><kbd>G</kbd> <kbd>L</kbd><span>Switch to list view</span></div>
-          <div><kbd>G</kbd> <kbd>C</kbd><span>Switch to grid view</span></div>
-          <div><kbd>D</kbd><span>Toggle theme</span></div>
-          <div><kbd>?</kbd><span>Open shortcut help</span></div>
+        <p class="modal-copy" id="confirmModalText">Delete this prompt permanently?</p>
+        <div class="form-actions">
+          <button class="ghost-button" type="button" data-close="confirmModalOverlay">Cancel</button>
+          <button class="danger-button" id="confirmDeleteButton" type="button">Delete</button>
         </div>
       </div>
     </div>
@@ -193,25 +200,32 @@
 
   <div class="overlay hidden" id="configModalOverlay" aria-hidden="true">
     <div class="modal config-modal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
-      <button class="modal-close" type="button" data-close="configModalOverlay" aria-label="Close GitHub configuration">×</button>
-      <div class="modal-content">
-        <h2 id="configModalTitle">GitHub Admin Setup</h2>
-        <p class="config-copy">Store your Personal Access Token and repo details locally in this browser. Nothing is hardcoded into the site.</p>
+      <button class="modal-close" type="button" data-close="configModalOverlay" aria-label="Close GitHub configuration">&times;</button>
+      <div class="modal-body">
+        <div class="modal-header">
+          <div>
+            <p class="section-label modal-kicker">GitHub Setup</p>
+            <h2 id="configModalTitle">Admin Repository Config</h2>
+          </div>
+        </div>
+        <p class="modal-copy">Store your token and repository details only in this browser so prompt edits can write back to GitHub.</p>
         <form id="configForm" class="prompt-form">
           <label class="field">
             <span>GitHub PAT</span>
             <input name="token" type="password" required autocomplete="off" placeholder="github_pat_...">
           </label>
+
           <div class="form-grid">
             <label class="field">
               <span>Owner</span>
-              <input name="owner" required placeholder="your-github-username">
+              <input name="owner" required placeholder="irvinpalacios">
             </label>
             <label class="field">
               <span>Repository</span>
-              <input name="repo" required placeholder="personalPromptLibrary">
+              <input name="repo" required placeholder="personal-prompt-library">
             </label>
           </div>
+
           <div class="form-grid">
             <label class="field">
               <span>Branch</span>
@@ -222,11 +236,49 @@
               <input name="path" required placeholder="prompts.json">
             </label>
           </div>
+
           <div class="form-actions">
-            <button class="toolbar-button" type="button" data-close="configModalOverlay">Cancel</button>
-            <button class="toolbar-button primary" type="submit">Save Config</button>
+            <button class="ghost-button" type="button" data-close="configModalOverlay">Cancel</button>
+            <button class="primary-button" type="submit">Save Config</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="commandPaletteOverlay" aria-hidden="true">
+    <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="commandPaletteTitle">
+      <div class="command-top">
+        <span class="search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="M20 20l-4.2-4.2"></path>
+          </svg>
+        </span>
+        <input id="commandPaletteInput" type="search" placeholder="Search prompts or type a command..." autocomplete="off">
+        <kbd>Esc</kbd>
+      </div>
+      <div class="command-results" id="commandPaletteResults" role="listbox" aria-label="Prompt results"></div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="helpOverlay" aria-hidden="true">
+    <div class="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="helpOverlayTitle">
+      <button class="modal-close" type="button" data-close="helpOverlay" aria-label="Close keyboard shortcuts">&times;</button>
+      <div class="modal-body">
+        <div class="modal-header">
+          <div>
+            <p class="section-label modal-kicker">Shortcuts</p>
+            <h2 id="helpOverlayTitle">Keyboard Shortcuts</h2>
+          </div>
+        </div>
+        <div class="shortcuts-grid">
+          <div><kbd>Ctrl/Cmd + K</kbd><span>Open command palette</span></div>
+          <div><kbd>Esc</kbd><span>Close active overlay</span></div>
+          <div><kbd>D</kbd><span>Toggle dark mode</span></div>
+          <div><kbd>?</kbd><span>Open shortcut help</span></div>
+          <div><kbd>Shift + A + M</kbd><span>Unlock admin mode</span></div>
+        </div>
       </div>
     </div>
   </div>

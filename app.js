@@ -1,58 +1,45 @@
-const APP_TITLE = "My Prompt Library";
+const APP_TITLE = "PromptOS";
 const ADMIN_PASSWORD = "shift-am-owner";
 const PROMPTS_URL = "./prompts.json";
 
 const STORAGE_KEYS = {
   theme: "prompt-library-theme",
-  palette: "prompt-library-palette",
-  view: "prompt-library-view",
   github: "prompt-library-github-config",
   admin: "prompt-library-admin-unlocked"
 };
 
-const PALETTES = [
-  { id: "sunset", label: "Sunset", colors: ["#fb7ca8", "#7cc7ff"] },
-  { id: "lagoon", label: "Lagoon", colors: ["#49c6c0", "#75a9ff"] },
-  { id: "citrus", label: "Citrus", colors: ["#f59f52", "#9bd16d"] }
-];
-
 const state = {
   prompts: [],
   filteredPrompts: [],
+  selectedCategory: "All",
+  selectedTag: "",
   search: "",
-  selectedCategory: "",
-  selectedTags: new Set(),
   selectedPromptId: null,
-  view: localStorage.getItem(STORAGE_KEYS.view) || "grid",
-  theme: localStorage.getItem(STORAGE_KEYS.theme) || "light",
-  palette: localStorage.getItem(STORAGE_KEYS.palette) || PALETTES[0].id,
+  theme: localStorage.getItem(STORAGE_KEYS.theme) || "dark",
   adminUnlocked: sessionStorage.getItem(STORAGE_KEYS.admin) === "true",
   githubConfig: readGitHubConfig(),
   commandPaletteOpen: false,
   commandQuery: "",
   commandResults: [],
   commandActiveIndex: 0,
-  formMode: "create",
   pendingDeleteId: null,
-  keySequence: []
+  formMode: "create",
+  keyBuffer: []
 };
 
 const els = {
   body: document.body,
-  siteHeader: document.getElementById("siteHeader"),
-  adminIndicator: document.getElementById("adminIndicator"),
-  promptCollection: document.getElementById("promptCollection"),
-  promptCount: document.getElementById("promptCount"),
+  categoryList: document.getElementById("categoryList"),
+  tagList: document.getElementById("tagList"),
   searchInput: document.getElementById("searchInput"),
-  categoryFilter: document.getElementById("categoryFilter"),
-  tagFilters: document.getElementById("tagFilters"),
+  currentCategoryTitle: document.getElementById("currentCategoryTitle"),
+  promptCount: document.getElementById("promptCount"),
+  promptCollection: document.getElementById("promptCollection"),
   themeToggle: document.getElementById("themeToggle"),
   themeToggleLabel: document.getElementById("themeToggleLabel"),
-  viewToggle: document.getElementById("viewToggle"),
-  viewToggleLabel: document.getElementById("viewToggleLabel"),
-  openPaletteButton: document.getElementById("openPaletteButton"),
-  paletteSwitcher: document.getElementById("paletteSwitcher"),
+  adminIndicator: document.getElementById("adminIndicator"),
   addPromptButton: document.getElementById("addPromptButton"),
+  configButton: document.getElementById("configButton"),
   promptModalOverlay: document.getElementById("promptModalOverlay"),
   promptModalContent: document.getElementById("promptModalContent"),
   formModalOverlay: document.getElementById("formModalOverlay"),
@@ -62,12 +49,13 @@ const els = {
   confirmModalOverlay: document.getElementById("confirmModalOverlay"),
   confirmModalText: document.getElementById("confirmModalText"),
   confirmDeleteButton: document.getElementById("confirmDeleteButton"),
+  configModalOverlay: document.getElementById("configModalOverlay"),
+  configForm: document.getElementById("configForm"),
   commandPaletteOverlay: document.getElementById("commandPaletteOverlay"),
   commandPaletteInput: document.getElementById("commandPaletteInput"),
   commandPaletteResults: document.getElementById("commandPaletteResults"),
+  openPaletteButton: document.getElementById("openPaletteButton"),
   helpOverlay: document.getElementById("helpOverlay"),
-  configModalOverlay: document.getElementById("configModalOverlay"),
-  configForm: document.getElementById("configForm"),
   toastRegion: document.getElementById("toastRegion")
 };
 
@@ -75,8 +63,7 @@ document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   document.title = APP_TITLE;
-  applyPreferences();
-  renderPaletteSwitcher();
+  applyTheme();
   bindEvents();
 
   try {
@@ -87,37 +74,35 @@ async function init() {
     handleDeepLink();
   } catch (error) {
     console.error(error);
-    showToast("Failed to load prompts.json. Check that the file is present and valid JSON.", "error");
     renderEmptyState("Unable to load prompts.");
+    showToast("Failed to load prompts.json.", "error");
   }
 }
 
 function bindEvents() {
   els.searchInput.addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    syncDerivedData();
-    renderAll();
-  });
-
-  els.categoryFilter.addEventListener("change", (event) => {
-    state.selectedCategory = event.target.value;
+    if (!state.search) {
+      state.selectedTag = "";
+    }
     syncDerivedData();
     renderAll();
   });
 
   els.themeToggle.addEventListener("click", toggleTheme);
-  els.viewToggle.addEventListener("click", () => setView(state.view === "grid" ? "list" : "grid"));
   els.openPaletteButton.addEventListener("click", openCommandPalette);
   els.addPromptButton.addEventListener("click", () => openPromptForm());
+  els.configButton.addEventListener("click", openConfigModal);
   els.promptForm.addEventListener("submit", onPromptFormSubmit);
   els.confirmDeleteButton.addEventListener("click", onConfirmDelete);
+  els.configForm.addEventListener("submit", onConfigFormSubmit);
+
   els.commandPaletteInput.addEventListener("input", (event) => {
     state.commandQuery = event.target.value;
     updateCommandResults();
     renderCommandPalette();
   });
   els.commandPaletteInput.addEventListener("keydown", handleCommandPaletteKeys);
-  els.configForm.addEventListener("submit", onConfigFormSubmit);
 
   document.querySelectorAll("[data-close]").forEach((button) => {
     button.addEventListener("click", () => closeOverlay(button.dataset.close));
@@ -132,7 +117,6 @@ function bindEvents() {
   });
 
   document.addEventListener("keydown", onGlobalKeyDown);
-  document.addEventListener("keyup", onGlobalKeyUp);
 }
 
 async function fetchLocalPrompts() {
@@ -156,58 +140,70 @@ function hydratePromptDates() {
 
 function syncDerivedData() {
   state.filteredPrompts = state.prompts.filter((prompt) => {
+    const matchesCategory = state.selectedCategory === "All" || prompt.category === state.selectedCategory;
+    const matchesTag = !state.selectedTag || (prompt.tags || []).includes(state.selectedTag);
     const matchesSearch = matchesPrompt(prompt, state.search);
-    const matchesCategory = !state.selectedCategory || prompt.category === state.selectedCategory;
-    const matchesTags = [...state.selectedTags].every((tag) => (prompt.tags || []).includes(tag));
-    return matchesSearch && matchesCategory && matchesTags;
+    return matchesCategory && matchesTag && matchesSearch;
   });
 
-  state.commandResults = getRankedResults(state.commandQuery);
+  updateCommandResults();
   if (state.commandActiveIndex >= state.commandResults.length) {
     state.commandActiveIndex = 0;
   }
 }
 
 function renderAll() {
-  renderCategoryOptions();
-  renderTagFilters();
+  renderCategories();
+  renderTags();
   renderPromptCount();
   renderPromptCollection();
   renderAdminUI();
-  updateViewUI();
   updateThemeUI();
-  updateCommandResults();
 }
 
-function renderCategoryOptions() {
-  const categories = [...new Set(state.prompts.map((prompt) => prompt.category).filter(Boolean))].sort();
-  const options = ['<option value="">All categories</option>']
-    .concat(categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`))
-    .join("");
-  els.categoryFilter.innerHTML = options;
-  els.categoryFilter.value = state.selectedCategory;
-}
+function renderCategories() {
+  const categories = ["All", ...new Set(state.prompts.map((prompt) => prompt.category).filter(Boolean))];
+  els.categoryList.innerHTML = categories.map((category) => {
+    const active = category === state.selectedCategory ? "is-active" : "";
+    const count = category === "All"
+      ? state.prompts.length
+      : state.prompts.filter((prompt) => prompt.category === category).length;
 
-function renderTagFilters() {
-  const tags = [...new Set(state.prompts.flatMap((prompt) => prompt.tags || []))].sort();
-  if (tags.length === 0) {
-    els.tagFilters.innerHTML = '<span class="status-line">No tags available</span>';
-    return;
-  }
-
-  els.tagFilters.innerHTML = tags.map((tag) => {
-    const active = state.selectedTags.has(tag) ? "is-active" : "";
-    return `<button class="chip ${active}" type="button" data-tag="${escapeAttribute(tag)}">${escapeHtml(tag)}</button>`;
+    return `
+      <button class="category-button ${active}" type="button" data-category="${escapeAttribute(category)}">
+        <span class="category-copy">
+          <span class="category-icon">${category === "All" ? iconLayers() : iconFolder()}</span>
+          <span>${escapeHtml(category)}</span>
+        </span>
+        <span class="count-pill">${count}</span>
+      </button>
+    `;
   }).join("");
 
-  els.tagFilters.querySelectorAll("[data-tag]").forEach((button) => {
+  els.categoryList.querySelectorAll("[data-category]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedCategory = button.dataset.category;
+      syncDerivedData();
+      renderAll();
+    });
+  });
+
+  els.currentCategoryTitle.textContent = state.selectedCategory;
+}
+
+function renderTags() {
+  const tags = [...new Set(state.prompts.flatMap((prompt) => prompt.tags || []))].slice(0, 15);
+  els.tagList.innerHTML = tags.map((tag) => {
+    const active = tag === state.selectedTag ? "is-active" : "";
+    return `<button class="tag-button ${active}" type="button" data-tag="${escapeAttribute(tag)}">#${escapeHtml(tag)}</button>`;
+  }).join("");
+
+  els.tagList.querySelectorAll("[data-tag]").forEach((button) => {
     button.addEventListener("click", () => {
       const tag = button.dataset.tag;
-      if (state.selectedTags.has(tag)) {
-        state.selectedTags.delete(tag);
-      } else {
-        state.selectedTags.add(tag);
-      }
+      state.selectedTag = state.selectedTag === tag ? "" : tag;
+      state.search = state.selectedTag || "";
+      els.searchInput.value = state.search;
       syncDerivedData();
       renderAll();
     });
@@ -215,128 +211,122 @@ function renderTagFilters() {
 }
 
 function renderPromptCount() {
-  els.promptCount.textContent = `Showing ${state.filteredPrompts.length} of ${state.prompts.length} prompts`;
+  const label = state.filteredPrompts.length === 1 ? "prompt" : "prompts";
+  els.promptCount.textContent = `${state.filteredPrompts.length} ${label} available`;
 }
 
 function renderPromptCollection() {
-  els.promptCollection.className = `library-grid ${state.view}-view`;
   if (state.filteredPrompts.length === 0) {
-    renderEmptyState("No prompts match the current filters.");
+    renderEmptyState("We could not find any prompts matching your criteria. Try adjusting your search.");
     return;
   }
 
-  els.promptCollection.innerHTML = state.view === "grid"
-    ? state.filteredPrompts.map(renderPromptCard).join("")
-    : state.filteredPrompts.map(renderPromptRow).join("");
-
-  bindPromptActions();
-}
-
-function renderPromptCard(prompt) {
-  return `
-    <article class="prompt-card" data-prompt-id="${escapeAttribute(prompt.id)}">
-      <div class="prompt-card-header">
-        <div class="meta-stack">
-          <div class="prompt-meta">
-            <span>${escapeHtml(prompt.category)}</span>
-            <span>${formatDate(prompt.dateAdded, "Added")}</span>
-            ${prompt.lastUpdated ? `<span>${formatDate(prompt.lastUpdated, "Updated")}</span>` : ""}
+  els.promptCollection.innerHTML = state.filteredPrompts.map((prompt, index) => `
+    <article class="prompt-card" data-prompt-id="${escapeAttribute(prompt.id)}" style="animation-delay:${index * 0.04}s">
+      <div class="card-inner">
+        <div class="card-toolbar">
+          <span class="shortcut-badge">${iconTerminal()} ${escapeHtml(prompt.shortcut)}</span>
+          <div class="card-actions">
+            ${state.adminUnlocked ? `
+              <button class="icon-button" type="button" data-action="edit" data-prompt-id="${escapeAttribute(prompt.id)}" aria-label="Edit prompt">${iconEdit()}</button>
+              <button class="icon-button danger" type="button" data-action="delete" data-prompt-id="${escapeAttribute(prompt.id)}" aria-label="Delete prompt">${iconTrash()}</button>
+            ` : ""}
           </div>
+        </div>
+
+        <div class="card-copy">
           <h3>${escapeHtml(prompt.title)}</h3>
           <p class="prompt-description">${escapeHtml(prompt.description)}</p>
         </div>
-      </div>
-      <div class="chip-group">
-        ${(prompt.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
-      </div>
-      <div class="prompt-actions">
-        <span class="shortcut-chip">⌨ ${escapeHtml(prompt.shortcut)}</span>
-        <button class="toolbar-button" type="button" data-action="view" data-prompt-id="${escapeAttribute(prompt.id)}">View</button>
-        ${renderAdminActionButtons(prompt.id)}
-      </div>
-    </article>
-  `;
-}
 
-function renderPromptRow(prompt) {
-  return `
-    <article class="prompt-row" data-prompt-id="${escapeAttribute(prompt.id)}">
-      <div class="meta-stack">
-        <div class="prompt-meta">
-          <span>${escapeHtml(prompt.category)}</span>
-          <span>${formatDate(prompt.dateAdded, "Added")}</span>
-          ${prompt.lastUpdated ? `<span>${formatDate(prompt.lastUpdated, "Updated")}</span>` : ""}
+        <div class="tag-stack">
+          ${(prompt.tags || []).slice(0, 3).map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`).join("")}
         </div>
-        <h3>${escapeHtml(prompt.title)}</h3>
-      </div>
-      <div class="chip-group">
-        ${(prompt.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
-      </div>
-      <div class="row-actions">
-        <span class="shortcut-chip">⌨ ${escapeHtml(prompt.shortcut)}</span>
-        <button class="toolbar-button" type="button" data-action="view" data-prompt-id="${escapeAttribute(prompt.id)}">View</button>
-        ${renderAdminActionButtons(prompt.id)}
+
+        <div class="card-footer">
+          <div class="tag-stack">
+            <span class="meta-pill">${escapeHtml(prompt.category)}</span>
+            <span class="meta-pill">${formatDate(prompt.dateAdded, "Added")}</span>
+          </div>
+          <button class="copy-button" type="button" data-action="copy" data-prompt-id="${escapeAttribute(prompt.id)}">${iconCopy()} <span>Copy</span></button>
+        </div>
       </div>
     </article>
-  `;
+  `).join("");
+
+  bindCardActions();
+  els.promptCollection.querySelectorAll(".prompt-card").forEach((card) => {
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("[data-action]")) {
+        return;
+      }
+      openPromptModal(card.dataset.promptId);
+    });
+  });
 }
 
-function renderAdminActionButtons(promptId) {
-  if (!state.adminUnlocked) {
-    return "";
-  }
-  return `
-    <button class="toolbar-button" type="button" data-action="edit" data-prompt-id="${escapeAttribute(promptId)}">Edit</button>
-    <button class="toolbar-button danger" type="button" data-action="delete" data-prompt-id="${escapeAttribute(promptId)}">Delete</button>
-  `;
-}
-
-function bindPromptActions() {
-  document.querySelectorAll("[data-action]").forEach((button) => {
-    button.addEventListener("click", () => {
+function bindCardActions() {
+  els.promptCollection.querySelectorAll("[data-action]").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.stopPropagation();
       const promptId = button.dataset.promptId;
       const action = button.dataset.action;
-      if (action === "view") openPromptModal(promptId);
-      if (action === "edit") openPromptForm(promptId);
-      if (action === "delete") openDeleteConfirm(promptId);
+
+      if (action === "copy") {
+        const prompt = state.prompts.find((entry) => entry.id === promptId);
+        if (prompt) {
+          await copyPromptText(prompt.body, button);
+        }
+      }
+      if (action === "edit") {
+        openPromptForm(promptId);
+      }
+      if (action === "delete") {
+        openDeleteConfirm(promptId);
+      }
     });
   });
 }
 
 function openPromptModal(promptId) {
   const prompt = state.prompts.find((entry) => entry.id === promptId);
-  if (!prompt) return;
+  if (!prompt) {
+    return;
+  }
 
   state.selectedPromptId = prompt.id;
   els.promptModalContent.innerHTML = `
-    <div class="meta-stack">
-      <div class="prompt-meta">
-        <span>${escapeHtml(prompt.category)}</span>
-        <span>${formatDate(prompt.dateAdded, "Added")}</span>
-        ${prompt.lastUpdated ? `<span>${formatDate(prompt.lastUpdated, "Updated")}</span>` : ""}
+    <div class="prompt-view-header">
+      <div class="tag-stack">
+        <span class="shortcut-badge">${iconFolder()} ${escapeHtml(prompt.category)}</span>
       </div>
-      <h2 id="promptModalTitle">${escapeHtml(prompt.title)}</h2>
-      <p class="prompt-description">${escapeHtml(prompt.description)}</p>
-      <div class="chip-group">
-        ${(prompt.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+      <div class="prompt-view-title">
+        <h2 id="promptModalTitle">${escapeHtml(prompt.title)}</h2>
+        <p class="modal-copy">${escapeHtml(prompt.description)}</p>
       </div>
-      <div class="prompt-actions">
-        <span class="shortcut-chip">⌨ ${escapeHtml(prompt.shortcut)}</span>
-        <button class="toolbar-button primary" type="button" id="copyPromptButton">Copy Prompt</button>
-        ${state.adminUnlocked ? '<button class="toolbar-button" type="button" id="modalEditButton">Edit</button><button class="toolbar-button danger" type="button" id="modalDeleteButton">Delete</button>' : ""}
+      <div class="tag-stack">
+        <span class="meta-pill">${formatDate(prompt.dateAdded, "Added")}</span>
+        ${prompt.lastUpdated ? `<span class="meta-pill">${formatDate(prompt.lastUpdated, "Updated")}</span>` : ""}
       </div>
-      <p class="prompt-body">${escapeHtml(prompt.body)}</p>
+    </div>
+
+    <div class="prompt-code-block">
+      <button class="copy-button" id="modalCopyButton" type="button">${iconCopy()} <span>Copy Prompt</span></button>
+      <pre>${escapeHtml(prompt.body)}</pre>
+    </div>
+
+    <div class="prompt-view-footer">
+      <div class="tag-stack">
+        ${(prompt.tags || []).map((tag) => `<span class="tag-pill">#${escapeHtml(tag)}</span>`).join("")}
+      </div>
+      <div class="topbar-actions">
+        ${state.adminUnlocked ? `<button class="ghost-button" id="modalEditButton" type="button">Edit</button><button class="danger-button" id="modalDeleteButton" type="button">Delete</button>` : ""}
+      </div>
     </div>
   `;
 
-  document.getElementById("copyPromptButton").addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(prompt.body);
-      showToast("Prompt copied to clipboard.", "success");
-    } catch (error) {
-      console.error(error);
-      showToast("Clipboard copy failed in this browser.", "error");
-    }
+  document.getElementById("modalCopyButton").addEventListener("click", async (event) => {
+    await copyPromptText(prompt.body, event.currentTarget);
   });
 
   if (state.adminUnlocked) {
@@ -351,8 +341,8 @@ function openPromptModal(promptId) {
 function openPromptForm(promptId = null) {
   const prompt = promptId ? state.prompts.find((entry) => entry.id === promptId) : null;
   state.formMode = prompt ? "edit" : "create";
-  els.formModalTitle.textContent = prompt ? "Edit Prompt" : "Add Prompt";
-  els.savePromptButton.textContent = prompt ? "Save Changes" : "Save Prompt";
+  els.formModalTitle.textContent = prompt ? "Edit Prompt" : "Create Prompt";
+  els.savePromptButton.textContent = prompt ? "Save Prompt" : "Create Prompt";
   els.promptForm.reset();
   els.promptForm.elements.id.readOnly = Boolean(prompt);
   els.promptForm.elements.dateAdded.value = todayDate();
@@ -363,9 +353,9 @@ function openPromptForm(promptId = null) {
     els.promptForm.elements.title.value = prompt.title;
     els.promptForm.elements.description.value = prompt.description;
     els.promptForm.elements.body.value = prompt.body;
-    els.promptForm.elements.tags.value = (prompt.tags || []).join(", ");
     els.promptForm.elements.category.value = prompt.category;
     els.promptForm.elements.shortcut.value = prompt.shortcut;
+    els.promptForm.elements.tags.value = (prompt.tags || []).join(", ");
     els.promptForm.elements.dateAdded.value = prompt.dateAdded || todayDate();
     els.promptForm.elements.lastUpdated.value = prompt.lastUpdated || todayDate();
   }
@@ -375,7 +365,9 @@ function openPromptForm(promptId = null) {
 
 function openDeleteConfirm(promptId) {
   const prompt = state.prompts.find((entry) => entry.id === promptId);
-  if (!prompt) return;
+  if (!prompt) {
+    return;
+  }
 
   state.pendingDeleteId = promptId;
   els.confirmModalText.textContent = `Delete "${prompt.title}" from the library? This writes a new prompts.json version to GitHub.`;
@@ -401,7 +393,7 @@ async function onPromptFormSubmit(event) {
 
   const nextPrompts = state.formMode === "edit"
     ? state.prompts.map((entry) => entry.id === prompt.id ? { ...prompt, lastUpdated: prompt.lastUpdated || todayDate() } : entry)
-    : [...state.prompts, prompt];
+    : [prompt, ...state.prompts];
 
   const saved = await persistPrompts(nextPrompts, state.formMode === "edit" ? "Updated prompt in GitHub." : "Added prompt to GitHub.");
   if (saved) {
@@ -410,7 +402,9 @@ async function onPromptFormSubmit(event) {
 }
 
 async function onConfirmDelete() {
-  if (!state.pendingDeleteId) return;
+  if (!state.pendingDeleteId) {
+    return;
+  }
   const nextPrompts = state.prompts.filter((entry) => entry.id !== state.pendingDeleteId);
   const saved = await persistPrompts(nextPrompts, "Deleted prompt from GitHub.");
   if (saved) {
@@ -422,8 +416,8 @@ async function onConfirmDelete() {
 
 async function persistPrompts(nextPrompts, successMessage) {
   try {
-    const saved = await writePromptsToGitHub(nextPrompts);
-    state.prompts = saved;
+    await writePromptsToGitHub(nextPrompts);
+    state.prompts = nextPrompts;
     hydratePromptDates();
     syncDerivedData();
     renderAll();
@@ -453,7 +447,7 @@ function normalizePrompt(values) {
 function readGitHubConfig() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.github) || "null");
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -527,62 +521,27 @@ async function writePromptsToGitHub(nextPrompts) {
   if (!putResponse.ok) {
     throw new Error(putPayload.message || "Unable to write prompts.json to GitHub.");
   }
-
-  return nextPrompts;
 }
 
-function renderAdminUI() {
-  els.siteHeader.classList.toggle("admin-active", state.adminUnlocked);
-  els.adminIndicator.classList.toggle("visible", state.adminUnlocked);
-  els.addPromptButton.classList.toggle("hidden", !state.adminUnlocked);
-}
-
-function applyPreferences() {
+function applyTheme() {
   els.body.dataset.theme = state.theme;
-  els.body.dataset.palette = state.palette;
 }
 
 function toggleTheme() {
-  state.theme = state.theme === "light" ? "dark" : "light";
+  state.theme = state.theme === "dark" ? "light" : "dark";
   localStorage.setItem(STORAGE_KEYS.theme, state.theme);
-  applyPreferences();
+  applyTheme();
   updateThemeUI();
 }
 
 function updateThemeUI() {
-  els.themeToggleLabel.textContent = state.theme === "light" ? "Dark" : "Light";
+  els.themeToggleLabel.textContent = state.theme === "dark" ? "Light" : "Dark";
 }
 
-function setView(view) {
-  state.view = view;
-  localStorage.setItem(STORAGE_KEYS.view, view);
-  updateViewUI();
-  renderPromptCollection();
-}
-
-function updateViewUI() {
-  els.viewToggleLabel.textContent = state.view === "grid" ? "List" : "Grid";
-}
-
-function renderPaletteSwitcher() {
-  els.paletteSwitcher.innerHTML = PALETTES.map((palette) => `
-    <button
-      class="palette-button ${palette.id === state.palette ? "is-active" : ""}"
-      type="button"
-      aria-label="Switch to ${escapeAttribute(palette.label)} palette"
-      data-palette="${escapeAttribute(palette.id)}"
-      style="background: linear-gradient(135deg, ${palette.colors[0]}, ${palette.colors[1]});"
-    ></button>
-  `).join("");
-
-  els.paletteSwitcher.querySelectorAll("[data-palette]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.palette = button.dataset.palette;
-      localStorage.setItem(STORAGE_KEYS.palette, state.palette);
-      applyPreferences();
-      renderPaletteSwitcher();
-    });
-  });
+function renderAdminUI() {
+  els.adminIndicator.classList.toggle("visible", state.adminUnlocked);
+  els.addPromptButton.classList.toggle("hidden", !state.adminUnlocked);
+  els.configButton.classList.toggle("hidden", !state.adminUnlocked);
 }
 
 function openCommandPalette() {
@@ -600,22 +559,27 @@ function updateCommandResults() {
 }
 
 function renderCommandPalette() {
-  const results = state.commandResults.slice(0, 12);
+  const results = state.commandResults.slice(0, 5);
   if (results.length === 0) {
-    els.commandPaletteResults.innerHTML = '<div class="empty-state"><p>No prompts matched that query.</p></div>';
+    els.commandPaletteResults.innerHTML = '<p class="empty-copy command-group-label">No matching prompts found.</p>';
     return;
   }
 
-  els.commandPaletteResults.innerHTML = results.map((prompt, index) => `
-    <button class="command-item ${index === state.commandActiveIndex ? "is-active" : ""}" type="button" data-command-id="${escapeAttribute(prompt.id)}">
-      <h3>${escapeHtml(prompt.title)}</h3>
-      <p>${escapeHtml(prompt.description)}</p>
-      <div class="command-item-meta">
-        <span class="shortcut-chip">⌨ ${escapeHtml(prompt.shortcut)}</span>
-        <span>${escapeHtml(prompt.category)}</span>
-      </div>
-    </button>
-  `).join("");
+  els.commandPaletteResults.innerHTML = `
+    <div class="command-group-label">Prompts</div>
+    ${results.map((prompt, index) => `
+      <button class="command-item ${index === state.commandActiveIndex ? "is-active" : ""}" type="button" data-command-id="${escapeAttribute(prompt.id)}">
+        <div class="command-copy">
+          <strong>${escapeHtml(prompt.title)}</strong>
+          <span>${escapeHtml(prompt.description)}</span>
+        </div>
+        <div class="command-right">
+          <span class="shortcut-badge">${escapeHtml(prompt.shortcut)}</span>
+          <span class="chevron">${iconChevron()}</span>
+        </div>
+      </button>
+    `).join("")}
+  `;
 
   els.commandPaletteResults.querySelectorAll("[data-command-id]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -626,8 +590,9 @@ function renderCommandPalette() {
 }
 
 function handleCommandPaletteKeys(event) {
-  if (!state.commandPaletteOpen) return;
-
+  if (!state.commandPaletteOpen) {
+    return;
+  }
   if (event.key === "ArrowDown") {
     event.preventDefault();
     state.commandActiveIndex = Math.min(state.commandActiveIndex + 1, Math.max(state.commandResults.length - 1, 0));
@@ -652,7 +617,7 @@ function getRankedResults(query) {
   const trimmed = query.trim().toLowerCase();
   const pool = state.prompts.slice();
   if (!trimmed) {
-    return pool.sort((a, b) => a.title.localeCompare(b.title));
+    return pool.slice(0, 5);
   }
 
   return pool
@@ -663,13 +628,22 @@ function getRankedResults(query) {
 }
 
 function scorePrompt(prompt, query) {
-  const haystacks = [prompt.title || "", prompt.description || "", prompt.category || "", prompt.shortcut || "", ...(prompt.tags || [])];
+  const haystacks = [
+    prompt.title || "",
+    prompt.description || "",
+    prompt.category || "",
+    prompt.shortcut || "",
+    ...(prompt.tags || [])
+  ];
+
   let score = 0;
   for (const item of haystacks) {
     const value = item.toLowerCase();
     if (value.includes(query)) {
       score += value === query ? 120 : 70;
-      if (value.startsWith(query)) score += 25;
+      if (value.startsWith(query)) {
+        score += 25;
+      }
     } else if (isSubsequence(query, value)) {
       score += 24;
     }
@@ -678,22 +652,28 @@ function scorePrompt(prompt, query) {
 }
 
 function matchesPrompt(prompt, search) {
-  if (!search) return true;
+  if (!search) {
+    return true;
+  }
   return scorePrompt(prompt, search.toLowerCase()) > 0;
 }
 
 function isSubsequence(query, text) {
   let index = 0;
   for (const char of text) {
-    if (char === query[index]) index += 1;
-    if (index === query.length) return true;
+    if (char === query[index]) {
+      index += 1;
+    }
+    if (index === query.length) {
+      return true;
+    }
   }
   return false;
 }
 
 function onGlobalKeyDown(event) {
-  const targetTag = document.activeElement?.tagName;
-  const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(targetTag);
+  const activeTag = document.activeElement?.tagName;
+  const isTyping = ["INPUT", "TEXTAREA", "SELECT"].includes(activeTag);
   const lowerKey = event.key.toLowerCase();
 
   if ((event.metaKey || event.ctrlKey) && lowerKey === "k") {
@@ -707,42 +687,34 @@ function onGlobalKeyDown(event) {
     return;
   }
 
-  if (!isTyping) {
-    if (lowerKey === "?") {
-      event.preventDefault();
-      openOverlay(els.helpOverlay);
-    }
-    if (lowerKey === "d") {
-      toggleTheme();
-    }
-    handleViewSequence(lowerKey);
+  if (!isTyping && lowerKey === "d") {
+    toggleTheme();
   }
 
-  state.keySequence.push({ key: lowerKey, ts: Date.now() });
-  state.keySequence = state.keySequence.filter((entry) => Date.now() - entry.ts < 800);
+  if (!isTyping && lowerKey === "?") {
+    event.preventDefault();
+    openOverlay(els.helpOverlay);
+  }
 
-  const keys = new Set([...state.keySequence.map((entry) => entry.key), event.shiftKey ? "shift" : null].filter(Boolean));
-  if (keys.has("shift") && keys.has("a") && keys.has("m")) {
+  state.keyBuffer.push({ key: lowerKey, shift: event.shiftKey, ts: Date.now() });
+  state.keyBuffer = state.keyBuffer.filter((entry) => Date.now() - entry.ts < 800);
+  const keys = new Set(state.keyBuffer.map((entry) => entry.key));
+  const hasShift = state.keyBuffer.some((entry) => entry.shift);
+
+  if (hasShift && keys.has("a") && keys.has("m")) {
     tryAdminUnlock();
-    state.keySequence = [];
+    state.keyBuffer = [];
   }
-}
-
-function onGlobalKeyUp() {
-  state.keySequence = state.keySequence.filter((entry) => Date.now() - entry.ts < 800);
-}
-
-function handleViewSequence(key) {
-  state.keySequence = state.keySequence.filter((entry) => Date.now() - entry.ts < 700);
-  const previous = state.keySequence[state.keySequence.length - 1];
-  if (previous?.key === "g" && key === "l") setView("list");
-  if (previous?.key === "g" && key === "c") setView("grid");
 }
 
 function tryAdminUnlock() {
-  if (state.adminUnlocked) return;
+  if (state.adminUnlocked) {
+    return;
+  }
   const attempt = window.prompt("Admin password");
-  if (!attempt) return;
+  if (!attempt) {
+    return;
+  }
   if (attempt !== ADMIN_PASSWORD) {
     showToast("Incorrect admin password.", "error");
     return;
@@ -752,50 +724,91 @@ function tryAdminUnlock() {
   sessionStorage.setItem(STORAGE_KEYS.admin, "true");
   renderAdminUI();
   showToast("Admin mode unlocked for this tab.", "success");
-  if (!state.githubConfig) openConfigModal();
+
+  if (!state.githubConfig) {
+    openConfigModal();
+  }
 }
 
 function closeTopOverlay() {
-  const openOverlays = ["helpOverlay", "configModalOverlay", "confirmModalOverlay", "formModalOverlay", "promptModalOverlay", "commandPaletteOverlay"]
-    .filter((id) => !document.getElementById(id).classList.contains("hidden"));
-  const topOverlayId = openOverlays[openOverlays.length - 1];
-  if (topOverlayId) closeOverlay(topOverlayId);
+  const openOverlays = [
+    "helpOverlay",
+    "configModalOverlay",
+    "confirmModalOverlay",
+    "formModalOverlay",
+    "promptModalOverlay",
+    "commandPaletteOverlay"
+  ].filter((id) => !document.getElementById(id).classList.contains("hidden"));
+
+  const top = openOverlays[openOverlays.length - 1];
+  if (top) {
+    closeOverlay(top);
+  }
 }
 
 function openOverlay(overlay) {
   overlay.classList.remove("hidden");
   overlay.setAttribute("aria-hidden", "false");
-  if (overlay.id === "commandPaletteOverlay") state.commandPaletteOpen = true;
+  if (overlay.id === "commandPaletteOverlay") {
+    state.commandPaletteOpen = true;
+  }
 }
 
 function closeOverlay(id) {
   const overlay = typeof id === "string" ? document.getElementById(id) : id;
   overlay.classList.add("hidden");
   overlay.setAttribute("aria-hidden", "true");
+
+  if (overlay.id === "promptModalOverlay") {
+    clearDeepLink();
+  }
   if (overlay.id === "commandPaletteOverlay") {
     state.commandPaletteOpen = false;
     state.commandQuery = "";
   }
-  if (overlay.id === "promptModalOverlay") clearDeepLink();
-  if (overlay.id === "confirmModalOverlay") state.pendingDeleteId = null;
+  if (overlay.id === "confirmModalOverlay") {
+    state.pendingDeleteId = null;
+  }
 }
 
 function renderEmptyState(message) {
-  els.promptCollection.className = `library-grid ${state.view}-view`;
   els.promptCollection.innerHTML = `
     <div class="empty-state">
-      <h3>Prompt shelf is quiet</h3>
+      <div class="empty-icon">${iconSearch()}</div>
+      <h3>Nothing found</h3>
       <p>${escapeHtml(message)}</p>
     </div>
   `;
 }
 
-function showToast(message, variant = "success") {
-  const toast = document.createElement("div");
-  toast.className = `toast ${variant}`;
-  toast.textContent = message;
-  els.toastRegion.appendChild(toast);
-  window.setTimeout(() => toast.remove(), 3200);
+async function copyPromptText(text, button) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_error) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textArea);
+  }
+
+  if (button) {
+    const label = button.querySelector("span:last-child");
+    const original = label ? label.textContent : "";
+    button.classList.add("is-copied");
+    if (label) {
+      label.textContent = "Copied";
+    }
+    window.setTimeout(() => {
+      button.classList.remove("is-copied");
+      if (label) {
+        label.textContent = original || "Copy";
+      }
+    }, 1800);
+  }
+
+  showToast("Prompt copied to clipboard.", "success");
 }
 
 function handleDeepLink() {
@@ -817,15 +830,27 @@ function clearDeepLink() {
   history.replaceState({}, "", url);
 }
 
-function formatDate(dateString, label) {
-  if (!dateString) return "";
-  const date = new Date(`${dateString}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return `${label}: ${dateString}`;
-  return `${label}: ${date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`;
+function showToast(message, variant = "success") {
+  const toast = document.createElement("div");
+  toast.className = `toast ${variant}`;
+  toast.textContent = message;
+  els.toastRegion.appendChild(toast);
+  window.setTimeout(() => toast.remove(), 3200);
 }
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(dateString, label) {
+  if (!dateString) {
+    return "";
+  }
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return `${label}: ${dateString}`;
+  }
+  return `${label}: ${date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`;
 }
 
 function encodeBase64(value) {
@@ -843,4 +868,36 @@ function escapeHtml(value) {
 
 function escapeAttribute(value) {
   return escapeHtml(value);
+}
+
+function iconSearch() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"></circle><path d="M20 20l-4.2-4.2"></path></svg>';
+}
+
+function iconTerminal() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l5 5-5 5"></path><path d="M11 16h9"></path></svg>';
+}
+
+function iconEdit() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4.5-1 9-9-3.5-3.5-9 9L4 20z"></path><path d="M13 5l3.5 3.5"></path></svg>';
+}
+
+function iconTrash() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M9 7V4h6v3"></path><path d="M8 7l1 12h6l1-12"></path></svg>';
+}
+
+function iconCopy() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"></rect><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path></svg>';
+}
+
+function iconFolder() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path></svg>';
+}
+
+function iconLayers() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5 9-5z"></path><path d="M3 12l9 5 9-5"></path></svg>';
+}
+
+function iconChevron() {
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>';
 }
