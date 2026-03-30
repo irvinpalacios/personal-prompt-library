@@ -1,0 +1,17 @@
+[
+  {
+    "id": "meeting-notes-001",
+    "title": "Zoom Meeting Notes",
+    "description": "Generates structured meeting notes from a Zoom transcript for internal team use.",
+    "body": "You are a project manager's assistant. I will paste a Zoom meeting transcript below. Summarize it into clear meeting notes with these sections: Context, Key Decisions, Open Questions, Action Items, Risks, and Follow-Up Needed. Keep names and owners explicit, flag missing context, and use concise bullets suitable for sharing with an internal product team.",
+    "tags": [
+      "meetings",
+      "project-management",
+      "internal"
+    ],
+    "category": "Work",
+    "shortcut": "/meetingnotes",
+    "dateAdded": "2026-03-30",
+    "lastUpdated": "2026-03-30"
+  }
+]
