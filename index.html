@@ -4,286 +4,261 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PromptOS</title>
-  <meta name="description" content="A static prompt library with hidden admin tools, command search, and GitHub-backed editing.">
+  <meta name="description" content="Static prompt library with hidden admin tools, command search, and GitHub-backed editing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <div class="ambient ambient-indigo"></div>
-    <div class="ambient ambient-emerald"></div>
+  <div class="page-ambience" aria-hidden="true">
+    <div class="ambience-orb orb-indigo"></div>
+    <div class="ambience-orb orb-emerald"></div>
+  </div>
 
-    <div class="layout-shell">
-      <aside class="sidebar glass-panel" id="sidebar">
-        <div class="sidebar-top">
-          <div class="brand-lockup">
-            <div class="brand-mark">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2L4 12h5l-1 10 8-10h-5l1-10z"></path>
-              </svg>
-            </div>
-            <div>
-              <p class="brand-kicker">Prompt System</p>
-              <h1>PromptOS</h1>
-            </div>
-          </div>
-
-          <div class="sidebar-status">
-            <button class="ghost-button" id="themeToggle" type="button" aria-label="Toggle dark mode">
-              <span id="themeToggleLabel">Light</span>
-            </button>
-            <div class="admin-badge" id="adminIndicator" aria-hidden="true">
-              <span class="status-dot"></span>
-              <span>Admin</span>
-            </div>
+  <div class="app-frame">
+    <aside class="sidebar glass-panel">
+      <div class="sidebar-top">
+        <div class="brand-row">
+          <div class="brand-logo">
+            <span class="icon icon-zap"></span>
           </div>
         </div>
 
-        <section class="sidebar-section">
-          <p class="section-label">Library</p>
-          <div class="category-list" id="categoryList"></div>
-        </section>
+        <div class="admin-badge hidden-force" id="adminBadge">
+          <span class="icon icon-unlock small"></span>
+          <span>Admin</span>
+        </div>
+      </div>
 
-        <section class="sidebar-section sidebar-fill">
-          <p class="section-label">Popular Tags</p>
-          <div class="tag-list" id="tagList"></div>
-        </section>
+      <section class="sidebar-section">
+        <p class="section-label">Library</p>
+        <div id="categoryList" class="category-list"></div>
+      </section>
 
-        <section class="sidebar-section sidebar-bottom">
-          <button class="command-button" id="openPaletteButton" type="button">
-            <span class="button-copy">
-              <span class="button-icon">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 8h16v8H4z"></path>
-                  <path d="M9 4v16"></path>
-                  <path d="M15 4v16"></path>
-                </svg>
-              </span>
+      <section class="sidebar-section sidebar-scroll">
+        <p class="section-label">Popular Tags</p>
+        <div id="tagList" class="tag-list"></div>
+      </section>
+
+      <div class="sidebar-footer">
+        <div class="footer-controls">
+          <div class="footer-top-row">
+            <button id="themeToggleBtn" class="icon-toggle" type="button" aria-label="Toggle dark mode">
+              <span class="theme-icon-light icon icon-moon"></span>
+              <span class="theme-icon-dark icon icon-sun hidden-force"></span>
+            </button>
+
+            <div class="palette-switcher" id="paletteSwitcher" aria-label="Color palette switcher"></div>
+          </div>
+
+          <button id="cmdKBtn" class="command-button" type="button">
+            <span class="command-copy">
+              <span class="icon icon-command"></span>
               <span>Command Menu</span>
             </span>
             <kbd>Ctrl/Cmd + K</kbd>
           </button>
-        </section>
-      </aside>
+        </div>
+      </div>
+    </aside>
 
-      <main class="main-shell">
-        <header class="topbar glass-panel">
-          <div class="search-wrap">
-            <span class="search-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="6"></circle>
-                <path d="M20 20l-4.2-4.2"></path>
-              </svg>
-            </span>
-            <input id="searchInput" type="search" placeholder="Search prompts, shortcuts, or descriptions...">
+    <main class="main-panel">
+      <header class="topbar glass-panel">
+        <div class="search-shell">
+          <span class="search-icon icon icon-search"></span>
+          <input id="searchInput" type="text" placeholder="Search prompts, shortcuts, or tags...">
+        </div>
+
+        <div class="topbar-actions">
+          <button id="configBtn" class="secondary-button hidden-force" type="button">GitHub Config</button>
+          <button id="newPromptBtn" class="primary-button hidden-force" type="button">
+            <span class="icon icon-plus small"></span>
+            <span class="button-label">New Prompt</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="content-panel">
+        <div class="content-heading">
+          <h1 id="viewTitle">All</h1>
+          <p id="viewCount">0 prompts available</p>
+        </div>
+
+        <div id="promptGrid" class="prompt-grid"></div>
+
+        <div id="emptyState" class="empty-state hidden-force">
+          <div class="empty-icon">
+            <span class="icon icon-search large"></span>
           </div>
+          <h3>Nothing found</h3>
+          <p>We couldn't find any prompts matching your criteria.</p>
+        </div>
+      </section>
+    </main>
+  </div>
 
-          <div class="topbar-actions">
-            <button class="ghost-button admin-only hidden" id="configButton" type="button">GitHub Config</button>
-            <button class="primary-button admin-only hidden" id="addPromptButton" type="button">
-              <span class="plus-symbol">+</span>
-              <span>New Prompt</span>
+  <div id="viewModalOverlay" class="overlay hidden-force">
+    <div class="modal view-modal" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle" onclick="event.stopPropagation()">
+      <div class="modal-header view-header">
+        <div>
+          <span id="viewModalCategory" class="category-chip">Category</span>
+          <h2 id="viewModalTitle">Title</h2>
+          <p id="viewModalDesc">Description</p>
+        </div>
+        <button class="close-modal-btn circle-button" type="button" aria-label="Close prompt modal">
+          <span class="icon icon-x"></span>
+        </button>
+      </div>
+
+      <div class="modal-content">
+        <div class="prompt-code-shell">
+          <div class="copy-corner">
+            <button class="copy-btn copy-btn-small circle-button" type="button" data-copy-target="viewModalBody">
+              <span class="icon icon-copy"></span>
             </button>
           </div>
-        </header>
-
-        <section class="content-shell">
-          <div class="content-heading">
-            <div>
-              <h2 id="currentCategoryTitle">All</h2>
-              <p id="promptCount">0 prompts available</p>
-            </div>
-          </div>
-
-          <div class="card-grid" id="promptCollection" aria-live="polite"></div>
-        </section>
-      </main>
-    </div>
-  </div>
-
-  <div class="overlay hidden" id="promptModalOverlay" aria-hidden="true">
-    <div class="modal prompt-modal" role="dialog" aria-modal="true" aria-labelledby="promptModalTitle">
-      <button class="modal-close" type="button" data-close="promptModalOverlay" aria-label="Close prompt details">&times;</button>
-      <div class="modal-body" id="promptModalContent"></div>
-    </div>
-  </div>
-
-  <div class="overlay hidden" id="formModalOverlay" aria-hidden="true">
-    <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formModalTitle">
-      <button class="modal-close" type="button" data-close="formModalOverlay" aria-label="Close prompt form">&times;</button>
-      <div class="modal-body">
-        <div class="modal-header">
-          <div>
-            <p class="section-label modal-kicker">Prompt Builder</p>
-            <h2 id="formModalTitle">Create Prompt</h2>
-          </div>
+          <pre id="viewModalBody"></pre>
         </div>
-
-        <form id="promptForm" class="prompt-form">
-          <div class="form-grid">
-            <label class="field">
-              <span>Prompt ID</span>
-              <input name="id" required placeholder="meeting-notes-001">
-            </label>
-            <label class="field">
-              <span>Shortcut</span>
-              <input name="shortcut" required placeholder="/meetingnotes">
-            </label>
-          </div>
-
-          <label class="field">
-            <span>Title</span>
-            <input name="title" required placeholder="Zoom Meeting Notes">
-          </label>
-
-          <label class="field">
-            <span>Description</span>
-            <textarea name="description" rows="2" required placeholder="Short description for cards and command search"></textarea>
-          </label>
-
-          <div class="form-grid">
-            <label class="field">
-              <span>Category</span>
-              <input name="category" required placeholder="Work">
-            </label>
-            <label class="field">
-              <span>Tags</span>
-              <input name="tags" required placeholder="meetings, project-management, internal">
-            </label>
-          </div>
-
-          <div class="form-grid">
-            <label class="field">
-              <span>Date Added</span>
-              <input name="dateAdded" type="date" required>
-            </label>
-            <label class="field">
-              <span>Last Updated</span>
-              <input name="lastUpdated" type="date">
-            </label>
-          </div>
-
-          <label class="field">
-            <span>Prompt Body</span>
-            <textarea name="body" rows="10" required placeholder="Act as a..."></textarea>
-          </label>
-
-          <div class="form-actions">
-            <button class="ghost-button" type="button" data-close="formModalOverlay">Cancel</button>
-            <button class="primary-button" id="savePromptButton" type="submit">Save Prompt</button>
-          </div>
-        </form>
       </div>
-    </div>
-  </div>
 
-  <div class="overlay hidden" id="confirmModalOverlay" aria-hidden="true">
-    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
-      <button class="modal-close" type="button" data-close="confirmModalOverlay" aria-label="Close delete prompt">&times;</button>
-      <div class="modal-body">
-        <div class="modal-header">
-          <div>
-            <p class="section-label modal-kicker">Delete Prompt</p>
-            <h2 id="confirmModalTitle">Remove Prompt</h2>
-          </div>
-        </div>
-        <p class="modal-copy" id="confirmModalText">Delete this prompt permanently?</p>
-        <div class="form-actions">
-          <button class="ghost-button" type="button" data-close="confirmModalOverlay">Cancel</button>
-          <button class="danger-button" id="confirmDeleteButton" type="button">Delete</button>
+      <div class="modal-footer">
+        <div id="viewModalTags" class="modal-tags"></div>
+        <div class="modal-footer-actions">
+          <button id="viewEditBtn" class="secondary-button hidden-force" type="button">Edit</button>
+          <button id="viewDeleteBtn" class="danger-button hidden-force" type="button">Delete</button>
+          <button class="copy-btn copy-btn-large primary-button" type="button" data-copy-target="viewModalBody">
+            <span class="icon icon-copy small"></span>
+            <span>Copy Prompt</span>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="overlay hidden" id="configModalOverlay" aria-hidden="true">
-    <div class="modal config-modal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
-      <button class="modal-close" type="button" data-close="configModalOverlay" aria-label="Close GitHub configuration">&times;</button>
-      <div class="modal-body">
-        <div class="modal-header">
-          <div>
-            <p class="section-label modal-kicker">GitHub Setup</p>
-            <h2 id="configModalTitle">Admin Repository Config</h2>
+  <div id="formModalOverlay" class="overlay hidden-force">
+    <div class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="formModalHeader" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="formModalHeader">
+          <span class="icon icon-sparkles small"></span>
+          <span>Create Prompt</span>
+        </h2>
+        <button class="close-modal-btn circle-button" type="button" aria-label="Close form modal">
+          <span class="icon icon-x"></span>
+        </button>
+      </div>
+
+      <form id="promptForm" class="form-body">
+        <input type="hidden" id="formId" name="id">
+        <div class="form-grid">
+          <div class="field field-full">
+            <label for="formTitle">Title</label>
+            <input id="formTitle" name="title" required placeholder="e.g., Code Review Template">
+          </div>
+
+          <div class="field field-full">
+            <label for="formDesc">Description</label>
+            <input id="formDesc" name="description" required placeholder="Short description for the grid...">
+          </div>
+
+          <div class="field">
+            <label for="formCategory">Category</label>
+            <input id="formCategory" name="category" required>
+          </div>
+
+          <div class="field">
+            <label for="formShortcut">Shortcut</label>
+            <input id="formShortcut" name="shortcut" required placeholder="/shortcut">
+          </div>
+
+          <div class="field field-full">
+            <label for="formTags">Tags (Comma Separated)</label>
+            <input id="formTags" name="tags" placeholder="react, web, template">
+          </div>
+
+          <div class="field field-full">
+            <label for="formBody">Prompt Body</label>
+            <textarea id="formBody" name="body" rows="7" required placeholder="Act as a..."></textarea>
+          </div>
+
+          <div class="field">
+            <label for="formDateAdded">Date Added</label>
+            <input id="formDateAdded" name="dateAdded" type="date" required>
+          </div>
+
+          <div class="field">
+            <label for="formLastUpdated">Last Updated</label>
+            <input id="formLastUpdated" name="lastUpdated" type="date">
           </div>
         </div>
-        <p class="modal-copy">Store your token and repository details only in this browser so prompt edits can write back to GitHub.</p>
-        <form id="configForm" class="prompt-form">
-          <label class="field">
-            <span>GitHub PAT</span>
-            <input name="token" type="password" required autocomplete="off" placeholder="github_pat_...">
-          </label>
 
-          <div class="form-grid">
-            <label class="field">
-              <span>Owner</span>
-              <input name="owner" required placeholder="irvinpalacios">
-            </label>
-            <label class="field">
-              <span>Repository</span>
-              <input name="repo" required placeholder="personal-prompt-library">
-            </label>
-          </div>
-
-          <div class="form-grid">
-            <label class="field">
-              <span>Branch</span>
-              <input name="branch" required placeholder="main">
-            </label>
-            <label class="field">
-              <span>Prompts Path</span>
-              <input name="path" required placeholder="prompts.json">
-            </label>
-          </div>
-
-          <div class="form-actions">
-            <button class="ghost-button" type="button" data-close="configModalOverlay">Cancel</button>
-            <button class="primary-button" type="submit">Save Config</button>
-          </div>
-        </form>
-      </div>
+        <div class="form-footer">
+          <button class="close-modal-btn tertiary-button" type="button">Cancel</button>
+          <button class="primary-button" type="submit">Save Prompt</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <div class="overlay hidden" id="commandPaletteOverlay" aria-hidden="true">
-    <div class="command-palette" role="dialog" aria-modal="true" aria-labelledby="commandPaletteTitle">
-      <div class="command-top">
-        <span class="search-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="6"></circle>
-            <path d="M20 20l-4.2-4.2"></path>
-          </svg>
-        </span>
-        <input id="commandPaletteInput" type="search" placeholder="Search prompts or type a command..." autocomplete="off">
-        <kbd>Esc</kbd>
+  <div id="cmdKModalOverlay" class="overlay hidden-force">
+    <div class="palette-modal" role="dialog" aria-modal="true" aria-labelledby="cmdKInput" onclick="event.stopPropagation()">
+      <div class="palette-input-row">
+        <span class="icon icon-search small"></span>
+        <input type="text" id="cmdKInput" placeholder="Search prompts or type a command...">
+        <kbd>ESC</kbd>
       </div>
-      <div class="command-results" id="commandPaletteResults" role="listbox" aria-label="Prompt results"></div>
+      <div id="cmdKResults" class="palette-results"></div>
     </div>
   </div>
 
-  <div class="overlay hidden" id="helpOverlay" aria-hidden="true">
-    <div class="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="helpOverlayTitle">
-      <button class="modal-close" type="button" data-close="helpOverlay" aria-label="Close keyboard shortcuts">&times;</button>
-      <div class="modal-body">
-        <div class="modal-header">
-          <div>
-            <p class="section-label modal-kicker">Shortcuts</p>
-            <h2 id="helpOverlayTitle">Keyboard Shortcuts</h2>
+  <div id="configModalOverlay" class="overlay hidden-force">
+    <div class="modal config-modal" role="dialog" aria-modal="true" aria-labelledby="configHeading" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="configHeading">
+          <span class="icon icon-github small"></span>
+          <span>GitHub Config</span>
+        </h2>
+        <button class="close-modal-btn circle-button" type="button" aria-label="Close config modal">
+          <span class="icon icon-x"></span>
+        </button>
+      </div>
+
+      <form id="configForm" class="config-form">
+        <p class="config-copy">Store your Personal Access Token locally. Nothing is saved to the server.</p>
+
+        <div class="field">
+          <label for="configToken">GitHub PAT</label>
+          <input id="configToken" name="token" type="password" required autocomplete="off">
+        </div>
+
+        <div class="form-grid compact-grid">
+          <div class="field">
+            <label for="configOwner">Owner</label>
+            <input id="configOwner" name="owner" required>
+          </div>
+          <div class="field">
+            <label for="configRepo">Repo</label>
+            <input id="configRepo" name="repo" required>
+          </div>
+          <div class="field">
+            <label for="configBranch">Branch</label>
+            <input id="configBranch" name="branch" value="main" required>
+          </div>
+          <div class="field">
+            <label for="configPath">Path</label>
+            <input id="configPath" name="path" value="prompts.json" required>
           </div>
         </div>
-        <div class="shortcuts-grid">
-          <div><kbd>Ctrl/Cmd + K</kbd><span>Open command palette</span></div>
-          <div><kbd>Esc</kbd><span>Close active overlay</span></div>
-          <div><kbd>D</kbd><span>Toggle dark mode</span></div>
-          <div><kbd>?</kbd><span>Open shortcut help</span></div>
-          <div><kbd>Shift + A + M</kbd><span>Unlock admin mode</span></div>
+
+        <div class="form-footer">
+          <button class="primary-button" type="submit">Save Config</button>
         </div>
-      </div>
+      </form>
     </div>
   </div>
 
-  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
   <script src="./app.js"></script>
 </body>
 </html>
