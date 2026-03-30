@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PromptOS</title>
+  <title>Prompt Library</title>
   <meta name="description" content="Static prompt library with hidden admin tools, command search, and GitHub-backed editing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,7 @@
       </section>
 
       <section class="sidebar-section sidebar-scroll">
-        <p class="section-label">Popular Tags</p>
+        <p class="section-label">Tags</p>
         <div id="tagList" class="tag-list"></div>
       </section>
 
@@ -54,10 +54,9 @@
 
           <button id="cmdKBtn" class="command-button" type="button">
             <span class="command-copy">
-              <span class="icon icon-command"></span>
               <span>Command Menu</span>
             </span>
-            <kbd>Ctrl/Cmd + K</kbd>
+            <kbd>Ctrl + K</kbd>
           </button>
         </div>
       </div>
@@ -88,9 +87,6 @@
         <div id="promptGrid" class="prompt-grid"></div>
 
         <div id="emptyState" class="empty-state hidden-force">
-          <div class="empty-icon">
-            <span class="icon icon-search large"></span>
-          </div>
           <h3>Nothing found</h3>
           <p>We couldn't find any prompts matching your criteria.</p>
         </div>

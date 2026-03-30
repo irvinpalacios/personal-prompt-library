@@ -160,7 +160,7 @@ button {
 }
 
 .brand-logo::after {
-  content: "PromptOS";
+  content: "Prompt Library";
 }
 
 .brand-logo > span {
