@@ -38,7 +38,7 @@ const state = {
   githubConfig: readGitHubConfig(),
   keySequence: [],
   theme: localStorage.getItem(STORAGE_KEYS.theme) || "light",
-  palette: localStorage.getItem(STORAGE_KEYS.palette) || "indigo",
+  palette: localStorage.getItem(STORAGE_KEYS.palette) || "teal",
   commandResults: []
 };
 

@@ -4,24 +4,27 @@ html {
 
 :root {
   color-scheme: light;
-  --font-family: -apple-system, "SF Pro Display", "SF Pro Text", "Inter", system-ui, sans-serif;
+  --font-family: "Inter", system-ui, sans-serif;
   --bg: #f8fafc;
-  --panel: rgba(255, 255, 255, 0.7);
+  --panel: rgba(255, 255, 255, 0.8);
   --panel-strong: #ffffff;
   --panel-soft: rgba(255, 255, 255, 0.5);
   --text: #1e293b;
   --text-strong: #0f172a;
   --muted: #64748b;
-  --line: rgba(226, 232, 240, 0.85);
+  --line: rgba(229, 231, 235, 1);
   --line-strong: rgba(129, 140, 248, 0.55);
   --accent: #6366f1;
   --accent-rgb: 99, 102, 241;
   --accent-2: #10b981;
   --danger: #dc2626;
-  --shadow: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.06);
-  --shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.07);
+  --shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+  --shadow-soft: 0 2px 8px rgba(15, 23, 42, 0.05);
+  --shadow-hover: 0 8px 30px -4px rgba(0, 0, 0, 0.10);
+  --card-radius: 24px;
+  --modal-bg: rgba(255, 255, 255, 0.75);
   --overlay: rgba(15, 23, 42, 0.36);
-  --letter-spacing-display: -0.025em;
+  --letter-spacing-display: -0.03em;
   --letter-spacing-label: 0.08em;
 }
 
@@ -38,6 +41,7 @@ html.dark {
   --line-strong: rgba(129, 140, 248, 0.44);
   --shadow: 0 4px 20px rgba(2, 6, 23, 0.28), 0 1px 6px rgba(2, 6, 23, 0.18);
   --shadow-soft: 0 2px 10px rgba(2, 6, 23, 0.22);
+  --modal-bg: rgba(15, 23, 42, 0.85);
   --overlay: rgba(2, 6, 23, 0.62);
 }
 
@@ -132,8 +136,8 @@ button {
 
 .glass-panel {
   background: var(--panel);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .sidebar {
@@ -173,8 +177,18 @@ button {
   width: 32px;
   height: 32px;
   padding: 8px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 12px;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent) 10%, white),
+    color-mix(in srgb, var(--accent) 22%, white)
+  );
+}
+
+html.dark .brand-logo > span {
+  background: linear-gradient(135deg,
+    rgba(var(--accent-rgb), 0.15),
+    rgba(var(--accent-rgb), 0.28)
+  );
 }
 
 .admin-badge {
@@ -204,6 +218,31 @@ html.dark .admin-badge {
   flex: 1;
   overflow-y: auto;
   padding-top: 12px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 .sidebar-scroll::-webkit-scrollbar,
@@ -244,13 +283,13 @@ html.dark .admin-badge {
   gap: 12px;
   padding: 7px 10px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 10px;
   background: transparent;
   color: var(--muted);
   font-size: 13px;
   font-weight: 500;
   text-align: left;
-  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
 }
 
 .category-item:hover {
@@ -258,8 +297,11 @@ html.dark .admin-badge {
 }
 
 .category-item.active {
-  background: var(--accent);
-  color: #ffffff;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb), 0.25);
+  font-weight: 700;
+  transform: scale(1.02);
 }
 
 .category-item .left {
@@ -276,7 +318,7 @@ html.dark .admin-badge {
 }
 
 .category-item.active .category-count {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .tag-list {
@@ -350,7 +392,7 @@ html.dark .admin-badge {
   height: 36px;
   display: inline-grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .palette-switcher {
@@ -449,8 +491,18 @@ kbd {
 }
 
 .search-shell input {
-  padding: 10px 14px 10px 38px;
-  border-radius: 10px;
+  padding: 14px 14px 14px 40px;
+  border-radius: 1rem;
+  background: rgba(241, 245, 249, 0.8);
+  transition: background-color 300ms ease, box-shadow 300ms ease;
+}
+
+html.dark .search-shell input {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.search-shell input:focus {
+  background: var(--panel-strong);
 }
 
 .search-shell input:focus,
@@ -458,7 +510,7 @@ kbd {
 .field textarea:focus,
 .palette-input-row input:focus {
   border-color: rgba(var(--accent-rgb), 0.5);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18), 0 8px 20px rgba(var(--accent-rgb), 0.10);
 }
 
 .search-icon {
@@ -483,19 +535,19 @@ kbd {
   justify-content: center;
   gap: 8px;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
 }
 
 .primary-button {
-  background: var(--text-strong);
-  color: var(--bg);
+  background: var(--accent);
+  color: #ffffff;
 }
 
-html.dark .primary-button {
-  background: #ffffff;
-  color: #0f172a;
+.primary-button:hover {
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.30);
+  transform: translateY(-1px);
 }
 
 .danger-button {
@@ -542,23 +594,25 @@ html.dark .primary-button {
 .prompt-card {
   position: relative;
   padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.55);
-  background: color-mix(in srgb, var(--panel-strong) 60%, transparent);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
   backdrop-filter: blur(6px);
+  box-shadow: var(--shadow);
   cursor: pointer;
-  transition: transform 220ms ease, box-shadow 220ms ease;
+  transition: transform 400ms ease, box-shadow 400ms ease;
   animation: fade-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 
 html.dark .prompt-card {
-  border-color: rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.72);
+  border-color: rgba(51, 65, 85, 0.72);
 }
 
 .prompt-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.07);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
 }
 
 .prompt-card-inner {
@@ -568,9 +622,13 @@ html.dark .prompt-card {
   flex-direction: column;
   gap: 14px;
   padding: 18px;
-  border-radius: 10px;
+  border-radius: 20px;
   overflow: hidden;
   background: var(--panel-strong);
+}
+
+html.dark .prompt-card-inner {
+  background: transparent;
 }
 
 .prompt-card-inner::before {
@@ -579,14 +637,16 @@ html.dark .prompt-card {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0;
-  transition: opacity 220ms ease;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2, var(--accent)));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 20px 20px 0 0;
 }
 
 .prompt-card:hover .prompt-card-inner::before {
-  opacity: 1;
+  transform: scaleX(1);
 }
 
 .prompt-toolbar {
@@ -645,7 +705,7 @@ html.dark .prompt-card {
 .prompt-card h3 {
   margin: 0 0 4px;
   color: var(--text-strong);
-  font-size: 1.0625rem;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.25;
   padding-right: 24px;
@@ -679,6 +739,14 @@ html.dark .prompt-card {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  opacity: 0.6;
+  transform: translateY(4px);
+  transition: opacity 300ms ease, transform 300ms ease, border-color 160ms ease;
+}
+
+.prompt-card:hover .prompt-footer {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .tag-stack {
@@ -730,22 +798,18 @@ html.dark .stacked-tag {
 .card-open-btn {
   min-width: 110px;
   padding: 7px 12px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--text-strong) 92%, transparent);
-  color: var(--bg);
+  border-radius: 12px;
+  background: var(--accent);
+  color: #ffffff;
   border: 1px solid transparent;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 
-html.dark .card-open-btn {
-  background: #ffffff;
-  color: #0f172a;
-}
-
 .card-open-btn:hover {
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.30);
 }
 
 .copied-state {
@@ -802,10 +866,12 @@ html.dark .card-open-btn {
 .modal,
 .palette-modal {
   width: 100%;
-  background: var(--panel-strong);
+  background: var(--modal-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.14), 0 2px 8px rgba(15, 23, 42, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
   animation: fade-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -871,8 +937,8 @@ html.dark .card-open-btn {
 .view-header h2 {
   display: block;
   margin: 0 0 8px;
-  font-size: 1.4375rem;
-  font-weight: 600;
+  font-size: 1.75rem;
+  font-weight: 700;
 }
 
 .view-header p {
@@ -889,9 +955,14 @@ html.dark .card-open-btn {
 .prompt-code-shell {
   position: relative;
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(229, 231, 235, 0.8);
+}
+
+html.dark .prompt-code-shell {
   background: #0f172a;
-  border: 1px solid rgba(51, 65, 85, 0.9);
+  border-color: rgba(51, 65, 85, 0.9);
 }
 
 .copy-corner {
@@ -908,21 +979,29 @@ html.dark .card-open-btn {
 
 .prompt-code-shell pre {
   margin: 0;
-  color: #a5b4fc;
-  font-size: 14px;
+  color: var(--text);
+  font-size: 0.8125rem;
   line-height: 1.8;
   white-space: pre-wrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+html.dark .prompt-code-shell pre {
+  color: #a5b4fc;
+}
+
 .modal-footer {
   padding: 16px 24px;
   background: color-mix(in srgb, var(--bg) 96%, transparent);
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(229, 231, 235, 0.30);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+html.dark .modal-footer {
+  border-top-color: rgba(51, 65, 85, 0.30);
 }
 
 .modal-tags {
@@ -1110,7 +1189,7 @@ html.dark .card-open-btn {
 
 .toast {
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: var(--shadow-soft);
   color: #ffffff;
   font-size: 14px;
@@ -1119,7 +1198,7 @@ html.dark .card-open-btn {
 }
 
 .toast.success {
-  background: #111827;
+  background: #1e293b;
 }
 
 html.dark .toast.success {
@@ -1129,10 +1208,12 @@ html.dark .toast.success {
 
 .toast.error {
   background: #ef4444;
+  border-radius: 12px;
 }
 
 .toast.warning {
   background: #f59e0b;
+  border-radius: 12px;
 }
 
 .icon {
