@@ -48,35 +48,6 @@
       </header>
 
       <main class="layout">
-        <section class="hero">
-          <div class="hero-copy">
-            <p class="hero-kicker">Search, copy, and refine your best prompts</p>
-            <h2>
-              A calm prompt catalog with a hidden
-              <span>editorial-grade admin workspace</span>
-            </h2>
-            <p class="hero-text">
-              The public surface stays clean and fast. The admin layer stays out
-              of sight until you summon it by shortcut.
-            </p>
-          </div>
-
-          <div class="hero-stats" id="heroStats">
-            <article>
-              <span class="stat-label">Prompts</span>
-              <strong id="promptCount">0</strong>
-            </article>
-            <article>
-              <span class="stat-label">Categories</span>
-              <strong id="categoryCount">0</strong>
-            </article>
-            <article>
-              <span class="stat-label">Saved in browser</span>
-              <strong>Local</strong>
-            </article>
-          </div>
-        </section>
-
         <section class="toolbar">
           <label class="search-field" for="searchInput">
             <span class="search-icon" aria-hidden="true"></span>
@@ -233,6 +204,32 @@
           <button class="palette-item" type="button" data-command="new-prompt">
             <span>New prompt</span>
             <kbd>Enter</kbd>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="promptDetailModal" aria-hidden="true">
+      <div class="modal-scrim" data-close="promptDetailModal"></div>
+      <div class="modal-panel prompt-detail-panel">
+        <div class="modal-heading prompt-detail-heading">
+          <div class="prompt-detail-meta">
+            <div class="prompt-detail-header-row">
+              <span class="category-pill" id="promptDetailCategory"></span>
+              <span class="favorite-badge hidden" id="promptDetailFavorite">Featured</span>
+            </div>
+            <h3 id="promptDetailTitle"></h3>
+            <p id="promptDetailDescription"></p>
+          </div>
+          <button class="ghost-button" type="button" data-close="promptDetailModal">
+            Close
+          </button>
+        </div>
+        <div class="prompt-detail-tags hidden" id="promptDetailTags"></div>
+        <div class="prompt-detail-body" id="promptDetailBody"></div>
+        <div class="form-actions">
+          <button class="primary-button" type="button" id="promptDetailCopyButton">
+            Copy prompt
           </button>
         </div>
       </div>

@@ -4,8 +4,6 @@ function formatCount(count, noun) {
 
 export function createAppElements() {
   return {
-    promptCount: document.querySelector("#promptCount"),
-    categoryCount: document.querySelector("#categoryCount"),
     searchInput: document.querySelector("#searchInput"),
     resultSummary: document.querySelector("#resultSummary"),
     categoryFilters: document.querySelector("#categoryFilters"),
@@ -37,6 +35,14 @@ export function createAppElements() {
     adminLoginError: document.querySelector("#adminLoginError"),
     commandPaletteModal: document.querySelector("#commandPaletteModal"),
     paletteList: document.querySelector("#paletteList"),
+    promptDetailModal: document.querySelector("#promptDetailModal"),
+    promptDetailCategory: document.querySelector("#promptDetailCategory"),
+    promptDetailFavorite: document.querySelector("#promptDetailFavorite"),
+    promptDetailTitle: document.querySelector("#promptDetailTitle"),
+    promptDetailDescription: document.querySelector("#promptDetailDescription"),
+    promptDetailTags: document.querySelector("#promptDetailTags"),
+    promptDetailBody: document.querySelector("#promptDetailBody"),
+    promptDetailCopyButton: document.querySelector("#promptDetailCopyButton"),
   };
 }
 
@@ -65,7 +71,13 @@ export function renderPrompts(elements, prompts) {
   elements.promptGrid.innerHTML = prompts
     .map(
       (prompt) => `
-        <article class="prompt-card">
+        <article
+          class="prompt-card"
+          data-prompt-id="${prompt.id}"
+          tabindex="0"
+          role="button"
+          aria-label="Open prompt ${escapeHtml(prompt.title)}"
+        >
           <div class="prompt-meta">
             <span class="category-pill">${escapeHtml(prompt.category)}</span>
             ${prompt.favorite ? '<span class="favorite-badge">Featured</span>' : ""}
@@ -117,9 +129,7 @@ export function renderAdminList(elements, prompts) {
     .join("");
 }
 
-export function updateSummary(elements, totalPrompts, filteredPrompts, categoryCount) {
-  elements.promptCount.textContent = String(totalPrompts);
-  elements.categoryCount.textContent = String(categoryCount);
+export function updateSummary(elements, totalPrompts, filteredPrompts) {
   elements.resultSummary.textContent = `${formatCount(filteredPrompts, "prompt")} visible`;
   elements.adminSummary.textContent = `${formatCount(totalPrompts, "record")} in this browser`;
 }
@@ -185,6 +195,21 @@ export function markCopied(button) {
     button.textContent = original;
     button.classList.remove("is-copied");
   }, 1300);
+}
+
+export function fillPromptDetail(elements, prompt) {
+  elements.promptDetailCategory.textContent = prompt.category;
+  elements.promptDetailFavorite.classList.toggle("hidden", !prompt.favorite);
+  elements.promptDetailTitle.textContent = prompt.title;
+  elements.promptDetailDescription.textContent = prompt.description;
+  elements.promptDetailBody.textContent = prompt.body;
+  elements.promptDetailCopyButton.dataset.copyPromptId = prompt.id;
+
+  const tags = Array.isArray(prompt.tags) ? prompt.tags : [];
+  elements.promptDetailTags.classList.toggle("hidden", tags.length === 0);
+  elements.promptDetailTags.innerHTML = tags
+    .map((tag) => `<span class="tag-pill">#${escapeHtml(tag)}</span>`)
+    .join("");
 }
 
 function escapeHtml(value) {

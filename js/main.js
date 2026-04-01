@@ -14,6 +14,7 @@ import {
   closeModal,
   createAppElements,
   fillPromptForm,
+  fillPromptDetail,
   focusPromptForm,
   markCopied,
   openModal,
@@ -60,18 +61,52 @@ function bindEvents() {
 
   elements.promptGrid.addEventListener("click", async (event) => {
     const copyButton = event.target.closest("[data-copy-id]");
-    if (!copyButton) {
+    if (copyButton) {
+      const prompt = state.prompts.find((item) => item.id === copyButton.dataset.copyId);
+      if (!prompt) {
+        return;
+      }
+
+      await copyText(prompt.body);
+      markCopied(copyButton);
+      showToast(elements, "Prompt copied");
       return;
     }
 
-    const prompt = state.prompts.find((item) => item.id === copyButton.dataset.copyId);
+    const promptCard = event.target.closest("[data-prompt-id]");
+    if (!promptCard) {
+      return;
+    }
+
+    const prompt = state.prompts.find((item) => item.id === promptCard.dataset.promptId);
     if (!prompt) {
       return;
     }
 
-    await copyText(prompt.body);
-    markCopied(copyButton);
-    showToast(elements, "Prompt copied");
+    openPromptDetail(prompt);
+  });
+
+  elements.promptGrid.addEventListener("keydown", (event) => {
+    if (event.target.closest("[data-copy-id]")) {
+      return;
+    }
+
+    const promptCard = event.target.closest("[data-prompt-id]");
+    if (!promptCard) {
+      return;
+    }
+
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    const prompt = state.prompts.find((item) => item.id === promptCard.dataset.promptId);
+    if (!prompt) {
+      return;
+    }
+
+    openPromptDetail(prompt);
   });
 
   elements.themeToggle.addEventListener("click", () => {
@@ -213,6 +248,19 @@ function bindEvents() {
     runPaletteCommand(button.dataset.command);
   });
 
+  elements.promptDetailCopyButton.addEventListener("click", async () => {
+    const prompt = state.prompts.find(
+      (item) => item.id === elements.promptDetailCopyButton.dataset.copyPromptId,
+    );
+    if (!prompt) {
+      return;
+    }
+
+    await copyText(prompt.body);
+    markCopied(elements.promptDetailCopyButton);
+    showToast(elements, "Prompt copied");
+  });
+
   document.addEventListener("click", (event) => {
     const closeTarget = event.target.closest("[data-close]");
     if (!closeTarget) {
@@ -251,6 +299,7 @@ function bindEvents() {
     if (event.key === "Escape") {
       closeModal(elements.adminLoginModal);
       closeModal(elements.commandPaletteModal);
+      closeModal(elements.promptDetailModal);
     }
   });
 }
@@ -262,7 +311,7 @@ function render() {
   renderFilters(elements, categories, state.activeCategory);
   renderPrompts(elements, filteredPrompts);
   renderAdminList(elements, [...state.prompts].sort(sortByUpdatedAt));
-  updateSummary(elements, state.prompts.length, filteredPrompts.length, categories.length - 1);
+  updateSummary(elements, state.prompts.length, filteredPrompts.length);
   toggleEmptyState(elements, filteredPrompts.length === 0);
 }
 
@@ -318,6 +367,11 @@ function runPaletteCommand(commandId) {
     focusPromptForm(elements);
     showToast(elements, "Ready for a new prompt");
   }
+}
+
+function openPromptDetail(prompt) {
+  fillPromptDetail(elements, prompt);
+  openModal(elements.promptDetailModal, elements.promptDetailCopyButton);
 }
 
 function sortByUpdatedAt(a, b) {
