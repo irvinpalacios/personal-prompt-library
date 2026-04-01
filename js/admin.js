@@ -18,15 +18,16 @@ export function createPromptRecord(formValues, existingPrompt) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 60);
+  const shortcut = formValues.shortcut.trim();
 
   return {
     id,
     title: formValues.title.trim(),
     category: formValues.category.trim(),
+    shortcut,
     description: formValues.description.trim(),
     body: formValues.body.trim(),
     tags: sanitizedTags,
-    favorite: formValues.favorite,
     createdAt: existingPrompt?.createdAt || timestamp,
     updatedAt: timestamp,
   };

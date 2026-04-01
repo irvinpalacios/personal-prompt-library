@@ -65,6 +65,10 @@ body {
     color 220ms ease;
 }
 
+body.is-admin-open {
+  overflow: hidden;
+}
+
 button,
 input,
 textarea {
@@ -381,7 +385,8 @@ body[data-theme="light"] .theme-toggle-thumb {
 }
 
 .category-pill,
-.tag-pill {
+.tag-pill,
+.shortcut-badge {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -394,9 +399,16 @@ body[data-theme="light"] .theme-toggle-thumb {
   font-size: 0.8rem;
 }
 
-.favorite-badge {
+.shortcut-badge {
+  max-width: 100%;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
   color: var(--accent);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .prompt-card h3 {
@@ -486,7 +498,27 @@ body[data-theme="light"] .theme-toggle-thumb {
 }
 
 .admin-shell {
-  margin-top: 28px;
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.admin-shell-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(12px);
+}
+
+.admin-shell-panel {
+  position: relative;
+  z-index: 1;
+  width: min(calc(100% - 24px), var(--content-width));
+  max-height: calc(100vh - 36px);
+  overflow: auto;
   padding: 26px;
   border: 1px solid var(--border);
   border-radius: 32px;
@@ -501,6 +533,13 @@ body[data-theme="light"] .theme-toggle-thumb {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.admin-record-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .admin-actions {
@@ -549,17 +588,6 @@ body[data-theme="light"] .theme-toggle-thumb {
 .prompt-form textarea:focus,
 .stack-form input:focus {
   border-color: var(--border-strong);
-}
-
-.checkbox-row {
-  display: flex !important;
-  align-items: center;
-  gap: 10px;
-}
-
-.checkbox-row input {
-  width: auto;
-  accent-color: var(--accent-strong);
 }
 
 .form-actions {
@@ -646,6 +674,9 @@ body[data-theme="light"] .theme-toggle-thumb {
 
 .prompt-detail-panel {
   width: min(calc(100% - 32px), 720px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .prompt-detail-heading {
@@ -655,6 +686,7 @@ body[data-theme="light"] .theme-toggle-thumb {
 .prompt-detail-meta {
   display: grid;
   gap: 12px;
+  padding-right: 88px;
 }
 
 .prompt-detail-header-row {
@@ -662,6 +694,12 @@ body[data-theme="light"] .theme-toggle-thumb {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.prompt-detail-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
 }
 
 .prompt-detail-heading h3 {
@@ -692,6 +730,12 @@ body[data-theme="light"] .theme-toggle-thumb {
   color: var(--text-muted);
   line-height: 1.75;
   white-space: pre-wrap;
+}
+
+.prompt-detail-actions {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .inline-error {
@@ -807,7 +851,21 @@ body[data-theme="light"] .theme-toggle-thumb {
     align-items: flex-start;
   }
 
-  .admin-shell {
+  .admin-shell-panel {
     padding: 18px;
+  }
+
+  .admin-record-meta {
+    align-items: flex-start;
+  }
+
+  .prompt-detail-meta {
+    padding-right: 0;
+    margin-top: 44px;
+  }
+
+  .prompt-detail-close {
+    top: 18px;
+    right: 18px;
   }
 }

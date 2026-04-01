@@ -20,10 +20,10 @@ export function createAppElements() {
     promptId: document.querySelector("#promptId"),
     promptTitle: document.querySelector("#promptTitle"),
     promptCategory: document.querySelector("#promptCategory"),
+    promptShortcut: document.querySelector("#promptShortcut"),
     promptDescription: document.querySelector("#promptDescription"),
     promptBody: document.querySelector("#promptBody"),
     promptTags: document.querySelector("#promptTags"),
-    promptFavorite: document.querySelector("#promptFavorite"),
     savePromptButton: document.querySelector("#savePromptButton"),
     deletePromptButton: document.querySelector("#deletePromptButton"),
     resetFormButton: document.querySelector("#resetFormButton"),
@@ -36,8 +36,9 @@ export function createAppElements() {
     commandPaletteModal: document.querySelector("#commandPaletteModal"),
     paletteList: document.querySelector("#paletteList"),
     promptDetailModal: document.querySelector("#promptDetailModal"),
+    promptDetailCloseButton: document.querySelector("#promptDetailCloseButton"),
     promptDetailCategory: document.querySelector("#promptDetailCategory"),
-    promptDetailFavorite: document.querySelector("#promptDetailFavorite"),
+    promptDetailShortcut: document.querySelector("#promptDetailShortcut"),
     promptDetailTitle: document.querySelector("#promptDetailTitle"),
     promptDetailDescription: document.querySelector("#promptDetailDescription"),
     promptDetailTags: document.querySelector("#promptDetailTags"),
@@ -80,7 +81,7 @@ export function renderPrompts(elements, prompts) {
         >
           <div class="prompt-meta">
             <span class="category-pill">${escapeHtml(prompt.category)}</span>
-            ${prompt.favorite ? '<span class="favorite-badge">Featured</span>' : ""}
+            ${renderShortcutBadge(prompt.shortcut)}
           </div>
           <div>
             <h3>${escapeHtml(prompt.title)}</h3>
@@ -111,10 +112,12 @@ export function renderAdminList(elements, prompts) {
         <article class="admin-record" data-admin-id="${prompt.id}">
           <div class="admin-record-header">
             <div>
-              <p class="eyebrow">${escapeHtml(prompt.category)}</p>
+              <div class="admin-record-meta">
+                <p class="eyebrow">${escapeHtml(prompt.category)}</p>
+                ${renderShortcutBadge(prompt.shortcut)}
+              </div>
               <h5>${escapeHtml(prompt.title)}</h5>
             </div>
-            ${prompt.favorite ? '<span class="favorite-badge">Featured</span>' : ""}
           </div>
           <p>${escapeHtml(prompt.description)}</p>
           <div class="admin-record-actions">
@@ -156,10 +159,10 @@ export function fillPromptForm(elements, prompt) {
   elements.promptId.value = prompt?.id || "";
   elements.promptTitle.value = prompt?.title || "";
   elements.promptCategory.value = prompt?.category || "";
+  elements.promptShortcut.value = prompt?.shortcut || "";
   elements.promptDescription.value = prompt?.description || "";
   elements.promptBody.value = prompt?.body || "";
   elements.promptTags.value = prompt?.tags?.join(", ") || "";
-  elements.promptFavorite.checked = Boolean(prompt?.favorite);
 
   const isEditing = Boolean(prompt);
   elements.formTitle.textContent = isEditing ? "Edit prompt" : "Add prompt";
@@ -199,7 +202,8 @@ export function markCopied(button) {
 
 export function fillPromptDetail(elements, prompt) {
   elements.promptDetailCategory.textContent = prompt.category;
-  elements.promptDetailFavorite.classList.toggle("hidden", !prompt.favorite);
+  elements.promptDetailShortcut.classList.toggle("hidden", !prompt.shortcut);
+  elements.promptDetailShortcut.textContent = prompt.shortcut || "";
   elements.promptDetailTitle.textContent = prompt.title;
   elements.promptDetailDescription.textContent = prompt.description;
   elements.promptDetailBody.textContent = prompt.body;
@@ -210,6 +214,14 @@ export function fillPromptDetail(elements, prompt) {
   elements.promptDetailTags.innerHTML = tags
     .map((tag) => `<span class="tag-pill">#${escapeHtml(tag)}</span>`)
     .join("");
+}
+
+function renderShortcutBadge(shortcut) {
+  if (!shortcut) {
+    return "";
+  }
+
+  return `<span class="shortcut-badge">${escapeHtml(shortcut)}</span>`;
 }
 
 function escapeHtml(value) {

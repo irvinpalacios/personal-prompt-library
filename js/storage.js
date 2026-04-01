@@ -1,7 +1,19 @@
 import { DEFAULT_THEME, STORAGE_KEYS, STORAGE_VERSION, seedPrompts } from "./data.js";
 
+const seedPromptsById = new Map(seedPrompts.map((prompt) => [prompt.id, prompt]));
+
 function cloneSeedPrompts() {
   return seedPrompts.map((prompt) => ({ ...prompt, tags: [...prompt.tags] }));
+}
+
+function normalizePrompt(prompt) {
+  const seedPrompt = seedPromptsById.get(prompt?.id);
+
+  return {
+    ...prompt,
+    shortcut: String(prompt?.shortcut ?? seedPrompt?.shortcut ?? "").trim(),
+    tags: Array.isArray(prompt?.tags) ? prompt.tags.map((tag) => String(tag)) : [],
+  };
 }
 
 function safeParse(value, fallback) {
@@ -21,7 +33,7 @@ export function loadPrompts() {
     return seed;
   }
 
-  return raw.items;
+  return raw.items.map(normalizePrompt);
 }
 
 export function savePrompts(prompts) {

@@ -75,93 +75,109 @@
           </p>
         </section>
 
-        <section class="admin-shell hidden" id="adminShell" aria-label="Admin workspace">
-          <div class="admin-header">
-            <div>
-              <p class="eyebrow">Admin mode</p>
-              <h3>Manage prompt records</h3>
-            </div>
-            <div class="admin-actions">
-              <button class="secondary-button" id="openPaletteButton" type="button">
-                Quick add
-              </button>
-              <button class="ghost-button" id="adminLogoutButton" type="button">
-                Exit admin
-              </button>
-            </div>
-          </div>
-
-          <div class="admin-grid">
-            <section class="admin-panel">
-              <div class="panel-heading">
-                <h4 id="formTitle">Add prompt</h4>
-                <button class="ghost-button hidden" id="resetFormButton" type="button">
-                  New prompt
+        <section
+          class="admin-shell hidden"
+          id="adminShell"
+          aria-label="Admin workspace"
+          aria-hidden="true"
+        >
+          <div class="admin-shell-scrim" data-admin-close="true"></div>
+          <div class="admin-shell-panel" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+            <div class="admin-header">
+              <div>
+                <p class="eyebrow">Admin mode</p>
+                <h3 id="adminTitle">Manage prompt records</h3>
+              </div>
+              <div class="admin-actions">
+                <button class="secondary-button" id="openPaletteButton" type="button">
+                  Quick add
+                </button>
+                <button class="ghost-button" id="adminLogoutButton" type="button">
+                  Exit admin
                 </button>
               </div>
+            </div>
 
-              <form id="promptForm" class="prompt-form">
-                <input type="hidden" id="promptId" />
-
-                <label>
-                  <span>Title</span>
-                  <input id="promptTitle" name="title" type="text" required />
-                </label>
-
-                <label>
-                  <span>Category</span>
-                  <input id="promptCategory" name="category" type="text" required />
-                </label>
-
-                <label>
-                  <span>Short description</span>
-                  <textarea
-                    id="promptDescription"
-                    name="description"
-                    rows="3"
-                    maxlength="220"
-                    required
-                  ></textarea>
-                </label>
-
-                <label>
-                  <span>Prompt body</span>
-                  <textarea id="promptBody" name="body" rows="9" required></textarea>
-                </label>
-
-                <label>
-                  <span>Tags</span>
-                  <input
-                    id="promptTags"
-                    name="tags"
-                    type="text"
-                    placeholder="Comma-separated tags"
-                  />
-                </label>
-
-                <label class="checkbox-row">
-                  <input id="promptFavorite" name="favorite" type="checkbox" />
-                  <span>Mark as featured</span>
-                </label>
-
-                <div class="form-actions">
-                  <button class="primary-button" type="submit" id="savePromptButton">
-                    Save prompt
-                  </button>
-                  <button class="ghost-button" type="button" id="deletePromptButton">
-                    Delete
+            <div class="admin-grid">
+              <section class="admin-panel">
+                <div class="panel-heading">
+                  <h4 id="formTitle">Add prompt</h4>
+                  <button class="ghost-button hidden" id="resetFormButton" type="button">
+                    New prompt
                   </button>
                 </div>
-              </form>
-            </section>
 
-            <section class="admin-panel">
-              <div class="panel-heading">
-                <h4>Library records</h4>
-                <p id="adminSummary"></p>
-              </div>
-              <div class="admin-list" id="adminList"></div>
-            </section>
+                <form id="promptForm" class="prompt-form">
+                  <input type="hidden" id="promptId" />
+
+                  <label>
+                    <span>Title</span>
+                    <input id="promptTitle" name="title" type="text" required />
+                  </label>
+
+                  <label>
+                    <span>Category</span>
+                    <input id="promptCategory" name="category" type="text" required />
+                  </label>
+
+                  <label>
+                    <span>Shortcut</span>
+                    <input
+                      id="promptShortcut"
+                      name="shortcut"
+                      type="text"
+                      maxlength="32"
+                      autocomplete="off"
+                      spellcheck="false"
+                      placeholder="Optional, e.g. ;review"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Short description</span>
+                    <textarea
+                      id="promptDescription"
+                      name="description"
+                      rows="3"
+                      maxlength="220"
+                      required
+                    ></textarea>
+                  </label>
+
+                  <label>
+                    <span>Prompt body</span>
+                    <textarea id="promptBody" name="body" rows="9" required></textarea>
+                  </label>
+
+                  <label>
+                    <span>Tags</span>
+                    <input
+                      id="promptTags"
+                      name="tags"
+                      type="text"
+                      placeholder="Comma-separated tags"
+                    />
+                  </label>
+
+                  <div class="form-actions">
+                    <button class="primary-button" type="submit" id="savePromptButton">
+                      Save prompt
+                    </button>
+                    <button class="ghost-button" type="button" id="deletePromptButton">
+                      Delete
+                    </button>
+                  </div>
+                </form>
+              </section>
+
+              <section class="admin-panel">
+                <div class="panel-heading">
+                  <h4>Library records</h4>
+                  <p id="adminSummary"></p>
+                </div>
+                <div class="admin-list" id="adminList"></div>
+              </section>
+            </div>
           </div>
         </section>
       </main>
@@ -212,24 +228,30 @@
     <div class="modal hidden" id="promptDetailModal" aria-hidden="true">
       <div class="modal-scrim" data-close="promptDetailModal"></div>
       <div class="modal-panel prompt-detail-panel">
+        <button
+          class="ghost-button prompt-detail-close"
+          id="promptDetailCloseButton"
+          type="button"
+          data-close="promptDetailModal"
+          aria-label="Close prompt details"
+        >
+          Close
+        </button>
         <div class="modal-heading prompt-detail-heading">
           <div class="prompt-detail-meta">
             <div class="prompt-detail-header-row">
               <span class="category-pill" id="promptDetailCategory"></span>
-              <span class="favorite-badge hidden" id="promptDetailFavorite">Featured</span>
+              <span class="shortcut-badge hidden" id="promptDetailShortcut"></span>
             </div>
             <h3 id="promptDetailTitle"></h3>
             <p id="promptDetailDescription"></p>
           </div>
-          <button class="ghost-button" type="button" data-close="promptDetailModal">
-            Close
-          </button>
         </div>
         <div class="prompt-detail-tags hidden" id="promptDetailTags"></div>
         <div class="prompt-detail-body" id="promptDetailBody"></div>
-        <div class="form-actions">
+        <div class="prompt-detail-actions">
           <button class="primary-button" type="button" id="promptDetailCopyButton">
-            Copy prompt
+            Copy Prompt
           </button>
         </div>
       </div>

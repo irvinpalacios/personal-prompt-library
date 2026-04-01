@@ -39,6 +39,7 @@ export function filterPrompts(prompts, query, category) {
     const haystack = [
       prompt.title,
       prompt.category,
+      prompt.shortcut,
       prompt.description,
       prompt.body,
       ...prompt.tags,

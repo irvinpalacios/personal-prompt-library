@@ -211,13 +211,16 @@ function bindEvents() {
     openModal(elements.commandPaletteModal, elements.paletteList.querySelector("[data-command]"));
   });
 
+  elements.adminShell.addEventListener("click", (event) => {
+    if (!event.target.closest("[data-admin-close]")) {
+      return;
+    }
+
+    closeAdminMode();
+  });
+
   elements.adminLogoutButton.addEventListener("click", () => {
-    state.isAdmin = false;
-    saveAdminSession(false);
-    syncAdminVisibility();
-    closeModal(elements.commandPaletteModal);
-    closeModal(elements.adminLoginModal);
-    showToast(elements, "Admin mode closed");
+    closeAdminMode();
   });
 
   elements.adminLoginForm.addEventListener("submit", (event) => {
@@ -317,6 +320,8 @@ function render() {
 
 function syncAdminVisibility() {
   elements.adminShell.classList.toggle("hidden", !state.isAdmin);
+  elements.adminShell.setAttribute("aria-hidden", String(!state.isAdmin));
+  document.body.classList.toggle("is-admin-open", state.isAdmin);
   if (state.isAdmin) {
     resetPromptForm(elements);
   }
@@ -326,10 +331,10 @@ function readPromptForm() {
   return {
     title: elements.promptTitle.value,
     category: elements.promptCategory.value,
+    shortcut: elements.promptShortcut.value,
     description: elements.promptDescription.value,
     body: elements.promptBody.value,
     tags: elements.promptTags.value,
-    favorite: elements.promptFavorite.checked,
   };
 }
 
@@ -369,9 +374,18 @@ function runPaletteCommand(commandId) {
   }
 }
 
+function closeAdminMode() {
+  state.isAdmin = false;
+  saveAdminSession(false);
+  syncAdminVisibility();
+  closeModal(elements.commandPaletteModal);
+  closeModal(elements.adminLoginModal);
+  showToast(elements, "Admin mode closed");
+}
+
 function openPromptDetail(prompt) {
   fillPromptDetail(elements, prompt);
-  openModal(elements.promptDetailModal, elements.promptDetailCopyButton);
+  openModal(elements.promptDetailModal, elements.promptDetailCloseButton);
 }
 
 function sortByUpdatedAt(a, b) {
