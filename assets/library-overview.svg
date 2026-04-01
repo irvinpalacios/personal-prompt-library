@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 248 140" fill="none">
+  <defs>
+    <linearGradient id="panel" x1="26" x2="220" y1="18" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#ebfffb" stop-opacity=".88"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="39" x2="184" y1="35" y2="114" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8ee6d9"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect x="18" y="18" width="212" height="104" rx="24" fill="url(#panel)" stroke="#b8ece4"/>
+  <rect x="34" y="34" width="72" height="72" rx="18" fill="#f5fffd" stroke="#d6f4ef"/>
+  <rect x="120" y="34" width="92" height="18" rx="9" fill="#dff7f2"/>
+  <rect x="120" y="61" width="78" height="10" rx="5" fill="#dbeafe"/>
+  <rect x="120" y="79" width="62" height="10" rx="5" fill="#dff7f2"/>
+  <rect x="120" y="97" width="51" height="10" rx="5" fill="#eef2ff"/>
+  <path d="M55 50h29c10.493 0 19 8.507 19 19v0c0 10.493-8.507 19-19 19H55c-10.493 0-19-8.507-19-19v0c0-10.493 8.507-19 19-19Z" fill="url(#accent)"/>
+  <path d="m68.5 55.5-10 13.2H67l-1.5 8.8 9.5-12.7h-8.2l1.7-9.3Z" fill="#fff"/>
+  <circle cx="203" cy="27" r="8" fill="#fff" stroke="#d7efe9"/>
+  <circle cx="30" cy="112" r="6" fill="#dff7f2"/>
+</svg>

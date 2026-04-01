@@ -189,7 +189,7 @@ function renderAll() {
   const filtered = getFilteredPrompts();
 
   els.viewTitle.textContent = state.selectedCategory;
-  els.viewCount.textContent = `${filtered.length} prompts available`;
+  els.viewCount.textContent = `${filtered.length} prompt${filtered.length === 1 ? "" : "s"} available`;
   renderCategories();
   renderTags();
   renderPromptGrid(filtered);
@@ -213,6 +213,7 @@ function getFilteredPrompts() {
 
 function renderPromptGrid(filtered) {
   els.promptGrid.innerHTML = "";
+  els.promptGrid.dataset.count = String(filtered.length);
   if (filtered.length === 0) {
     els.emptyState.classList.remove("hidden-force");
     return;
@@ -405,6 +406,18 @@ function renderCommandResults(query) {
     );
   }
   state.commandResults = results.slice(0, 6);
+  if (state.commandResults.length === 0) {
+    els.cmdKResults.innerHTML = `
+      <div class="palette-group-label">Prompts</div>
+      <div class="palette-empty-state">
+        <img class="palette-empty-art" src="./assets/command-orb.svg" alt="" width="72" height="72">
+        <p>No matching prompts.</p>
+        <span>Try a different title, tag, or shortcut.</span>
+      </div>
+    `;
+    return;
+  }
+
   els.cmdKResults.innerHTML = `
     <div class="palette-group-label">Prompts</div>
     ${state.commandResults.map((prompt) => `
@@ -519,10 +532,12 @@ function toggleAdmin() {
 }
 
 function openModal(overlay) {
+  document.body.classList.add("modal-open");
   overlay.classList.remove("hidden-force");
 }
 
 function closeAllModals() {
+  document.body.classList.remove("modal-open");
   [els.viewModal, els.formModal, els.cmdKModal, els.configModal].forEach((overlay) => {
     overlay.classList.add("hidden-force");
   });

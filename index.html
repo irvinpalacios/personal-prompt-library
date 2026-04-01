@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prompt Library</title>
   <meta name="description" content="Static prompt library with hidden admin tools, command search, and GitHub-backed editing.">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,7 +22,13 @@
       <div class="sidebar-top">
         <div class="brand-row">
           <div class="brand-logo">
-            <span class="icon icon-zap"></span>
+            <span class="brand-mark">
+              <img src="./assets/brand-mark.svg" alt="" width="42" height="42">
+            </span>
+            <div class="brand-copy">
+              <span class="brand-title">Prompt Library</span>
+              <span class="brand-subtitle">Personal prompt system</span>
+            </div>
           </div>
         </div>
 
@@ -64,9 +71,12 @@
 
     <main class="main-panel">
       <header class="topbar glass-panel">
-        <div class="search-shell">
-          <span class="search-icon icon icon-search"></span>
-          <input id="searchInput" type="text" placeholder="Search prompts, shortcuts, or tags...">
+        <div class="topbar-copy">
+          <p class="topbar-eyebrow">Reusable writing blocks, instantly searchable</p>
+          <div class="search-shell">
+            <span class="search-icon icon icon-search"></span>
+            <input id="searchInput" type="text" placeholder="Search prompts, shortcuts, or tags...">
+          </div>
         </div>
 
         <div class="topbar-actions">
@@ -79,16 +89,28 @@
       </header>
 
       <section class="content-panel">
-        <div class="content-heading">
-          <h1 id="viewTitle">All</h1>
-          <p id="viewCount">0 prompts available</p>
-        </div>
+        <div class="content-shell">
+          <div class="content-heading">
+            <p class="content-kicker">Prompt index</p>
+            <div class="content-heading-row">
+              <div class="content-heading-copy">
+                <h1 id="viewTitle">All</h1>
+                <p id="viewCount">0 prompts available</p>
+              </div>
+              <div class="content-heading-aside">
+                <p class="content-summary">A clean, searchable library for prompts, shortcuts, and reusable instructions.</p>
+                <img class="content-heading-art" src="./assets/library-overview.svg" alt="" width="248" height="140">
+              </div>
+            </div>
+          </div>
 
-        <div id="promptGrid" class="prompt-grid"></div>
+          <div id="promptGrid" class="prompt-grid"></div>
 
-        <div id="emptyState" class="empty-state hidden-force">
-          <h3>Nothing found</h3>
-          <p>We couldn't find any prompts matching your criteria.</p>
+          <div id="emptyState" class="empty-state hidden-force">
+            <img class="empty-state-art" src="./assets/empty-library.svg" alt="" width="192" height="152">
+            <h3>Nothing found</h3>
+            <p>We couldn't find any prompts matching your criteria.</p>
+          </div>
         </div>
       </section>
     </main>

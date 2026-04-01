@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 152" fill="none">
+  <defs>
+    <linearGradient id="shelf" x1="34" x2="156" y1="34" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ecfffb"/>
+    </linearGradient>
+    <linearGradient id="note" x1="58" x2="129" y1="38" y2="109" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dff7f1"/>
+      <stop offset="1" stop-color="#bfebe0"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="96" cy="126" rx="58" ry="10" fill="#d9f5ef"/>
+  <rect x="29" y="26" width="134" height="90" rx="24" fill="url(#shelf)" stroke="#cbeee7"/>
+  <rect x="54" y="40" width="84" height="58" rx="18" fill="url(#note)" stroke="#9edfd4"/>
+  <path d="M78 61h37" stroke="#0f766e" stroke-linecap="round" stroke-width="6"/>
+  <path d="M78 77h23" stroke="#58b7a7" stroke-linecap="round" stroke-width="6"/>
+  <path d="M123 53h11v11" stroke="#0f766e" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
+  <path d="m134 53-17 17" stroke="#0f766e" stroke-linecap="round" stroke-width="4"/>
+  <circle cx="48" cy="51" r="6" fill="#eefbff"/>
+  <circle cx="147" cy="108" r="7" fill="#eef2ff"/>
+</svg>
