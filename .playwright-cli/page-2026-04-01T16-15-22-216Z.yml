@@ -1,0 +1,80 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e6]:
+        - generic [ref=e8]: Prompt Library Personal prompt system
+        - text: Prompt Library
+      - generic [ref=e9]:
+        - paragraph [ref=e10]: Library
+        - generic [ref=e11]:
+          - button "All 1" [ref=e12] [cursor=pointer]:
+            - generic [ref=e13]:
+              - img [ref=e14]
+              - generic [ref=e18]: All
+            - generic [ref=e19]: "1"
+          - button "Work" [ref=e20] [cursor=pointer]:
+            - generic [ref=e21]:
+              - img [ref=e22]
+              - generic [ref=e24]: Work
+      - generic [ref=e25]:
+        - paragraph [ref=e26]: Tags
+        - generic [ref=e27]:
+          - button "#meetings" [ref=e28] [cursor=pointer]
+          - button "#project-management" [ref=e29] [cursor=pointer]
+          - button "#internal" [ref=e30] [cursor=pointer]
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - button "Toggle dark mode" [ref=e34] [cursor=pointer]
+          - generic "Color palette switcher" [ref=e35]:
+            - button "Indigo palette" [ref=e36] [cursor=pointer]
+            - button "Ember palette" [ref=e37] [cursor=pointer]
+            - button "Teal palette" [ref=e38] [cursor=pointer]
+        - button "Command Menu Ctrl + K" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: Command Menu
+          - generic [ref=e42]: Ctrl + K
+    - main [ref=e43]:
+      - generic [ref=e45]:
+        - paragraph [ref=e46]: Reusable writing blocks, instantly searchable
+        - textbox "Search prompts, shortcuts, or tags..." [ref=e48]
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - paragraph [ref=e52]: Prompt index
+          - generic [ref=e53]:
+            - generic [ref=e54]:
+              - heading "All" [level=1] [ref=e55]
+              - paragraph [ref=e56]: 1 prompts available
+            - paragraph [ref=e57]: A clean, searchable library for prompts, shortcuts, and reusable instructions.
+        - article [ref=e59] [cursor=pointer]:
+          - generic [ref=e60]:
+            - generic [ref=e62]:
+              - img [ref=e63]
+              - text: /meetingnotes
+            - generic [ref=e65]:
+              - heading "Zoom Meeting Notes" [level=3] [ref=e66]
+              - paragraph [ref=e67]: Generates structured meeting notes from a Zoom transcript for internal team use.
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - generic [ref=e70]: meetings
+                - generic [ref=e71]: project-management
+                - generic [ref=e72]: internal
+              - generic [ref=e73]:
+                - button "Open Prompt" [ref=e74]
+                - button "Copy prompt" [ref=e75]:
+                  - img [ref=e76]
+  - dialog "Zoom Meeting Notes" [ref=e80]:
+    - generic [ref=e81]:
+      - generic [ref=e82]:
+        - generic [ref=e83]: Work
+        - heading "Zoom Meeting Notes" [level=2] [ref=e84]
+        - paragraph [ref=e85]: Generates structured meeting notes from a Zoom transcript for internal team use.
+      - button "Close prompt modal" [ref=e86] [cursor=pointer]
+    - generic [ref=e88]:
+      - button [ref=e90] [cursor=pointer]
+      - generic [ref=e91]: "You are a project manager's assistant. I will paste a Zoom meeting transcript below. Summarize it into clear meeting notes with these sections: Context, Key Decisions, Open Questions, Action Items, Risks, and Follow-Up Needed. Keep names and owners explicit, flag missing context, and use concise bullets suitable for sharing with an internal product team."
+    - generic [ref=e92]:
+      - generic [ref=e93]:
+        - generic [ref=e94]: "#meetings"
+        - generic [ref=e95]: "#project-management"
+        - generic [ref=e96]: "#internal"
+      - button "Copy Prompt" [ref=e98] [cursor=pointer]:
+        - generic [ref=e100]: Copy Prompt

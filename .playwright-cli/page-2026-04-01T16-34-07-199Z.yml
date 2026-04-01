@@ -1,0 +1,72 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e6]: Prompt Library
+      - generic [ref=e8]:
+        - paragraph [ref=e9]: Library
+        - generic [ref=e32]:
+          - button "All 1" [ref=e33] [cursor=pointer]:
+            - generic [ref=e34]:
+              - img [ref=e35]
+              - generic [ref=e39]: All
+            - generic [ref=e40]: "1"
+          - button "Work" [ref=e41] [cursor=pointer]:
+            - generic [ref=e42]:
+              - img [ref=e43]
+              - generic [ref=e45]: Work
+      - generic [ref=e10]:
+        - paragraph [ref=e11]: Tags
+        - generic [ref=e46]:
+          - button "#meetings" [ref=e47] [cursor=pointer]
+          - button "#project-management" [ref=e48] [cursor=pointer]
+          - button "#internal" [ref=e49] [cursor=pointer]
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - button "Toggle dark mode" [ref=e15] [cursor=pointer]
+          - generic "Color palette switcher" [ref=e16]:
+            - button "Indigo palette" [ref=e17] [cursor=pointer]
+            - button "Ember palette" [ref=e18] [cursor=pointer]
+            - button "Teal palette" [ref=e19] [cursor=pointer]
+        - button "Command Menu Ctrl + K" [ref=e20] [cursor=pointer]:
+          - generic [ref=e22]: Command Menu
+          - generic [ref=e23]: Ctrl + K
+    - main [ref=e24]:
+      - textbox "Search prompts, shortcuts, or tags..." [ref=e27]
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - heading "All" [level=1] [ref=e30]
+          - paragraph [ref=e31]: 1 prompts available
+        - article [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]:
+            - generic [ref=e54]:
+              - img [ref=e55]
+              - text: /meetingnotes
+            - generic [ref=e57]:
+              - heading "Zoom Meeting Notes" [level=3] [ref=e58]
+              - paragraph [ref=e59]: Generates structured meeting notes from a Zoom transcript for internal team use.
+            - generic [ref=e60]:
+              - generic [ref=e61]:
+                - generic [ref=e62]: meetings
+                - generic [ref=e63]: project-management
+                - generic [ref=e64]: internal
+              - generic [ref=e65]:
+                - button "Open Prompt" [active] [ref=e66]
+                - button "Copy prompt" [ref=e67]:
+                  - img [ref=e68]
+  - dialog "Zoom Meeting Notes" [ref=e89]:
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - generic [ref=e92]: Work
+        - heading "Zoom Meeting Notes" [level=2] [ref=e93]
+        - paragraph [ref=e94]: Generates structured meeting notes from a Zoom transcript for internal team use.
+      - button "Close prompt modal" [ref=e95] [cursor=pointer]
+    - generic [ref=e97]:
+      - button [ref=e99] [cursor=pointer]
+      - generic [ref=e100]: "You are a project manager's assistant. I will paste a Zoom meeting transcript below. Summarize it into clear meeting notes with these sections: Context, Key Decisions, Open Questions, Action Items, Risks, and Follow-Up Needed. Keep names and owners explicit, flag missing context, and use concise bullets suitable for sharing with an internal product team."
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - generic [ref=e103]: "#meetings"
+        - generic [ref=e104]: "#project-management"
+        - generic [ref=e105]: "#internal"
+      - button "Copy Prompt" [ref=e107] [cursor=pointer]:
+        - generic [ref=e109]: Copy Prompt
