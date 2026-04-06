@@ -6,6 +6,7 @@ import {
   filterPrompts,
   getPromptWorkflows,
   getWorkflowPrompts,
+  normalizeText,
 } from "./filters.js";
 import { getPaletteCommand } from "./palette.js";
 import {
@@ -26,17 +27,17 @@ import {
   focusPromptForm,
   markCopied,
   openModal,
+  renderActiveView,
   renderActiveFilters,
   renderAdminList,
   renderFilters,
   renderPrompts,
-  renderWorkflowPreview,
-  renderWorkflowFilters,
+  renderWorkflowList,
   resetPromptForm,
   showToast,
   toggleEmptyState,
+  toggleWorkflowEmptyState,
   updateSummary,
-  updateWorkflowSummary,
 } from "./ui.js";
 
 const elements = createAppElements();
@@ -45,8 +46,8 @@ const state = {
   prompts: loadPrompts(),
   workflows: clonePublishedWorkflows(),
   query: "",
+  activeView: "workflows",
   activeCategory: "All",
-  activeWorkflowId: "all",
   theme: loadTheme(),
   isAdmin: loadAdminSession(),
   editingPromptId: null,
@@ -63,6 +64,16 @@ function bindEvents() {
     render();
   });
 
+  elements.viewSwitch.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-view]");
+    if (!button) {
+      return;
+    }
+
+    state.activeView = button.dataset.view;
+    render();
+  });
+
   elements.categoryFilters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-category]");
     if (!button) {
@@ -73,14 +84,13 @@ function bindEvents() {
     render();
   });
 
-  elements.workflowFilters.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-workflow-id]");
+  elements.workflowList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-start-workflow-id]");
     if (!button) {
       return;
     }
 
-    state.activeWorkflowId = button.dataset.workflowId;
-    render();
+    openWorkflowDetail(button.dataset.startWorkflowId);
   });
 
   elements.activeFilterBar.addEventListener("click", (event) => {
@@ -109,7 +119,7 @@ function bindEvents() {
       return;
     }
 
-    openPromptDetail(prompt, state.activeWorkflowId !== "all" ? state.activeWorkflowId : "");
+    openPromptDetail(prompt);
   });
 
   elements.promptGrid.addEventListener("keydown", (event) => {
@@ -132,20 +142,7 @@ function bindEvents() {
       return;
     }
 
-    openPromptDetail(prompt, state.activeWorkflowId !== "all" ? state.activeWorkflowId : "");
-  });
-
-  elements.workflowGuidePreview.addEventListener("click", async (event) => {
-    await handleWorkflowPromptAction(event, state.activeWorkflowId, false);
-  });
-
-  elements.activeWorkflowButton.addEventListener("click", () => {
-    const workflowId = elements.activeWorkflowButton.dataset.workflowId;
-    if (!workflowId) {
-      return;
-    }
-
-    openWorkflowDetail(workflowId);
+    openPromptDetail(prompt);
   });
 
   elements.themeToggle.addEventListener("click", () => {
@@ -368,42 +365,31 @@ function bindEvents() {
 function render() {
   const categories = deriveCategories(state.prompts);
   const workflows = deriveWorkflows(state.prompts, state.workflows);
-  const activeWorkflowFilter =
-    workflows.find((workflow) => workflow.id === state.activeWorkflowId) || workflows[0];
-  const activeWorkflow =
-    activeWorkflowFilter.id === "all"
-      ? activeWorkflowFilter
-      : {
-          ...state.workflows.find((workflow) => workflow.id === activeWorkflowFilter.id),
-          promptCount: activeWorkflowFilter.promptCount,
-        };
-  const activeWorkflowPrompts =
-    activeWorkflow.id === "all"
-      ? []
-      : getWorkflowPrompts(activeWorkflow.id, state.prompts, state.workflows);
+  const workflowRecords = buildWorkflowRecords(workflows);
+  const filteredWorkflows = filterWorkflowRecords(workflowRecords, state.query);
   const filteredPrompts = filterPrompts(
     state.prompts,
     state.query,
     state.activeCategory,
-    activeWorkflow.id,
+    "all",
     state.workflows,
   );
 
-  renderWorkflowFilters(elements, workflows, activeWorkflow.id);
+  renderActiveView(elements, state.activeView);
+  renderWorkflowList(elements, filteredWorkflows);
   renderFilters(elements, categories, state.activeCategory);
-  renderActiveFilters(elements, state, activeWorkflow);
+  renderActiveFilters(elements, state);
   renderPrompts(elements, filteredPrompts, state.workflows);
-  renderWorkflowPreview(elements, activeWorkflow, activeWorkflowPrompts);
   renderAdminList(elements, [...state.prompts].sort(sortByUpdatedAt));
   updateSummary(
     elements,
+    state.activeView,
     state.prompts.length,
     filteredPrompts.length,
-    state.activeCategory,
-    activeWorkflow,
+    filteredWorkflows.length,
   );
-  updateWorkflowSummary(elements, workflows, activeWorkflow);
-  toggleEmptyState(elements, filteredPrompts.length === 0, activeWorkflow);
+  toggleEmptyState(elements, filteredPrompts.length === 0);
+  toggleWorkflowEmptyState(elements, filteredWorkflows.length === 0);
 }
 
 function syncAdminVisibility() {
@@ -447,14 +433,47 @@ function removePrompt(promptId) {
   showToast(elements, `${prompt?.title || "Prompt"} deleted`);
 }
 
+function buildWorkflowRecords(workflowFilters) {
+  const promptCountsByWorkflowId = new Map(
+    workflowFilters.map((workflow) => [workflow.id, workflow.promptCount]),
+  );
+
+  return state.workflows.map((workflow) => ({
+    ...workflow,
+    promptCount: promptCountsByWorkflowId.get(workflow.id) || 0,
+  }));
+}
+
+function filterWorkflowRecords(workflows, query) {
+  const normalizedQuery = normalizeText(query);
+  if (!normalizedQuery) {
+    return workflows;
+  }
+
+  return workflows.filter((workflow) => {
+    const linkedPrompts = getWorkflowPrompts(workflow.id, state.prompts, state.workflows);
+    const haystack = [
+      workflow.name,
+      workflow.summary,
+      workflow.whenToUse,
+      workflow.output,
+      ...workflow.inputs,
+      ...workflow.steps.map((step) => step.title),
+      ...workflow.steps.map((step) => step.instruction),
+      ...linkedPrompts.map((prompt) => prompt.title),
+      ...linkedPrompts.map((prompt) => prompt.description),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(normalizedQuery);
+  });
+}
+
 function clearFilter(filterType) {
   if (filterType === "query" || filterType === "all") {
     state.query = "";
     elements.searchInput.value = "";
-  }
-
-  if (filterType === "workflow" || filterType === "all") {
-    state.activeWorkflowId = "all";
   }
 
   if (filterType === "category" || filterType === "all") {

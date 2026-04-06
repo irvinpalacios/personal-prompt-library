@@ -60,59 +60,53 @@
             />
           </label>
           <p class="toolbar-caption" id="resultSummary">Loading prompts...</p>
-        </section>
-
-        <section class="workflow-toolbar" aria-label="Workflow guides">
-          <div class="workflow-toolbar-header">
-            <div>
-              <p class="eyebrow">Workflow guides</p>
-              <p class="workflow-toolbar-title">Browse the library by process, not just by prompt.</p>
-            </div>
-            <button class="secondary-button hidden" id="activeWorkflowButton" type="button">
-              View workflow guide
+          <div class="view-switch" id="viewSwitch" aria-label="Library view">
+            <button class="view-switch-button active" type="button" data-view="workflows">
+              Workflows
+            </button>
+            <button class="view-switch-button" type="button" data-view="prompts">
+              Prompts
             </button>
           </div>
-          <section class="filters workflow-filters" id="workflowFilters" aria-label="Workflow filters"></section>
-          <p class="workflow-caption" id="workflowSummary">Loading workflows...</p>
-          <section class="workflow-guide-preview hidden" id="workflowGuidePreview" aria-live="polite">
-            <div class="workflow-preview-grid">
-              <div>
-                <p class="eyebrow">When to use it</p>
-                <p id="workflowPreviewWhenToUse"></p>
-              </div>
-              <div>
-                <p class="eyebrow">Expected output</p>
-                <p id="workflowPreviewOutput"></p>
-              </div>
+        </section>
+
+        <section class="library-view" id="workflowView" aria-label="Workflow browser">
+          <div class="workflow-view-header">
+            <div>
+              <p class="eyebrow">Workflow guides</p>
+              <h2>Choose the process first.</h2>
+              <p>
+                Start with a workflow when you want the prompt in context: what to gather,
+                how to run it, and what output to expect.
+              </p>
             </div>
-            <div class="workflow-preview-steps">
-              <div class="detail-section-header">
-                <div>
-                  <p class="eyebrow">Next steps</p>
-                  <h4>Run the workflow</h4>
-                </div>
-              </div>
-              <ol class="workflow-step-list compact" id="workflowPreviewSteps"></ol>
-            </div>
+          </div>
+          <section class="workflow-list" id="workflowList" aria-live="polite"></section>
+          <section class="empty-state hidden" id="workflowEmptyState">
+            <p class="empty-eyebrow">No workflows</p>
+            <h3>No workflow guides match that search.</h3>
+            <p>Try another keyword or switch to prompts to search the standalone library.</p>
           </section>
         </section>
 
-        <section class="filter-group" aria-label="Category filters">
-          <p class="eyebrow">Categories</p>
-          <section class="filters category-filters" id="categoryFilters" aria-label="Prompt filters"></section>
-        </section>
+        <section class="library-view hidden" id="promptView" aria-label="Prompt browser">
+          <section class="filter-group" aria-label="Category filters">
+            <p class="eyebrow">Categories</p>
+            <section class="filters category-filters" id="categoryFilters" aria-label="Prompt filters"></section>
+          </section>
 
-        <section class="active-filter-bar hidden" id="activeFilterBar" aria-label="Active filters"></section>
+          <section class="active-filter-bar hidden" id="activeFilterBar" aria-label="Active filters"></section>
 
-        <section class="prompt-grid" id="promptGrid" aria-live="polite"></section>
+          <section class="prompt-grid" id="promptGrid" aria-live="polite"></section>
 
-        <section class="empty-state hidden" id="emptyState">
-          <p class="empty-eyebrow">No matches</p>
-          <h3 id="emptyStateTitle">Nothing fits that search yet.</h3>
-          <p id="emptyStateMessage">
-            Try another keyword, clear the active category, or expand the
-            library in admin mode.
-          </p>
+          <section class="empty-state hidden" id="emptyState">
+            <p class="empty-eyebrow">No matches</p>
+            <h3 id="emptyStateTitle">Nothing fits that search yet.</h3>
+            <p id="emptyStateMessage">
+              Try another keyword, clear the active category, or expand the
+              library in admin mode.
+            </p>
+          </section>
         </section>
 
         <section

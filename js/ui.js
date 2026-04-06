@@ -6,13 +6,11 @@ export function createAppElements() {
   return {
     searchInput: document.querySelector("#searchInput"),
     resultSummary: document.querySelector("#resultSummary"),
-    workflowFilters: document.querySelector("#workflowFilters"),
-    workflowSummary: document.querySelector("#workflowSummary"),
-    activeWorkflowButton: document.querySelector("#activeWorkflowButton"),
-    workflowGuidePreview: document.querySelector("#workflowGuidePreview"),
-    workflowPreviewWhenToUse: document.querySelector("#workflowPreviewWhenToUse"),
-    workflowPreviewOutput: document.querySelector("#workflowPreviewOutput"),
-    workflowPreviewSteps: document.querySelector("#workflowPreviewSteps"),
+    viewSwitch: document.querySelector("#viewSwitch"),
+    workflowView: document.querySelector("#workflowView"),
+    promptView: document.querySelector("#promptView"),
+    workflowList: document.querySelector("#workflowList"),
+    workflowEmptyState: document.querySelector("#workflowEmptyState"),
     categoryFilters: document.querySelector("#categoryFilters"),
     activeFilterBar: document.querySelector("#activeFilterBar"),
     promptGrid: document.querySelector("#promptGrid"),
@@ -74,6 +72,16 @@ export function applyTheme(theme, elements) {
   elements.themeToggleLabel.textContent = theme === "dark" ? "Dark" : "Light";
 }
 
+export function renderActiveView(elements, activeView) {
+  elements.workflowView.classList.toggle("hidden", activeView !== "workflows");
+  elements.promptView.classList.toggle("hidden", activeView !== "prompts");
+  elements.viewSwitch.querySelectorAll("[data-view]").forEach((button) => {
+    const isActive = button.dataset.view === activeView;
+    button.classList.toggle("active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+}
+
 export function renderFilters(elements, categories, activeCategory) {
   elements.categoryFilters.innerHTML = categories
     .map(
@@ -90,31 +98,37 @@ export function renderFilters(elements, categories, activeCategory) {
     .join("");
 }
 
-export function renderWorkflowFilters(elements, workflows, activeWorkflowId) {
-  elements.workflowFilters.innerHTML = workflows
+export function renderWorkflowList(elements, workflows) {
+  elements.workflowList.innerHTML = workflows
     .map(
       (workflow) => `
-        <button
-          class="filter-chip ${workflow.id === activeWorkflowId ? "active" : ""}"
-          type="button"
-          data-workflow-id="${workflow.id}"
-        >
-          ${escapeHtml(workflow.name)} <span aria-hidden="true">${workflow.promptCount}</span>
-        </button>
+        <article class="workflow-card">
+          <div class="workflow-card-main">
+            <p class="eyebrow">${formatCount(workflow.steps.length, "step")} | ${formatCount(
+              workflow.promptCount,
+              "linked prompt",
+            )}</p>
+            <h3>${escapeHtml(workflow.name)}</h3>
+            <p>${escapeHtml(workflow.summary)}</p>
+          </div>
+          <div class="workflow-card-detail">
+            <p class="eyebrow">Expected output</p>
+            <p>${escapeHtml(workflow.output)}</p>
+          </div>
+          <button class="primary-button" type="button" data-start-workflow-id="${workflow.id}">
+            Start Workflow
+          </button>
+        </article>
       `,
     )
     .join("");
 }
 
-export function renderActiveFilters(elements, state, activeWorkflow) {
+export function renderActiveFilters(elements, state) {
   const filters = [];
 
   if (state.query) {
     filters.push({ type: "query", label: `Search: ${state.query}` });
-  }
-
-  if (activeWorkflow && activeWorkflow.id !== "all") {
-    filters.push({ type: "workflow", label: `Workflow: ${activeWorkflow.name}` });
   }
 
   if (state.activeCategory && state.activeCategory !== "All") {
@@ -209,68 +223,26 @@ export function renderAdminList(elements, prompts) {
     .join("");
 }
 
-export function updateSummary(elements, totalPrompts, filteredPrompts, activeCategory, activeWorkflow) {
-  const summaryParts = [`${formatCount(filteredPrompts, "prompt")} visible`];
-
-  if (activeWorkflow && activeWorkflow.id !== "all") {
-    summaryParts.push(`workflow: ${activeWorkflow.name}`);
-  }
-
-  if (activeCategory && activeCategory !== "All") {
-    summaryParts.push(`category: ${activeCategory}`);
-  }
-
-  elements.resultSummary.textContent = summaryParts.join(" | ");
+export function updateSummary(elements, activeView, totalPrompts, filteredPrompts, filteredWorkflows) {
+  elements.resultSummary.textContent =
+    activeView === "workflows"
+      ? `${formatCount(filteredWorkflows, "workflow guide")} visible`
+      : `${formatCount(filteredPrompts, "prompt")} visible`;
   elements.adminSummary.textContent = `${formatCount(totalPrompts, "record")} in this browser`;
 }
 
-export function updateWorkflowSummary(elements, workflows, activeWorkflow) {
-  if (activeWorkflow && activeWorkflow.id !== "all") {
-    elements.workflowSummary.textContent = activeWorkflow.summary;
-    elements.activeWorkflowButton.classList.remove("hidden");
-    elements.activeWorkflowButton.textContent = "Open Full Guide";
-    elements.activeWorkflowButton.dataset.workflowId = activeWorkflow.id;
-    return;
-  }
-
-  elements.workflowSummary.textContent = `${formatCount(
-    Math.max(workflows.length - 1, 0),
-    "workflow guide",
-  )} available. Select a workflow to narrow the library and open the guide.`;
-  elements.activeWorkflowButton.classList.add("hidden");
-  elements.activeWorkflowButton.dataset.workflowId = "";
-}
-
-export function renderWorkflowPreview(elements, workflow, linkedPrompts) {
-  const showPreview = Boolean(workflow && workflow.id !== "all");
-
-  elements.workflowGuidePreview.classList.toggle("hidden", !showPreview);
-  if (!showPreview) {
-    elements.workflowPreviewWhenToUse.textContent = "";
-    elements.workflowPreviewOutput.textContent = "";
-    elements.workflowPreviewSteps.innerHTML = "";
-    return;
-  }
-
-  elements.workflowPreviewWhenToUse.textContent = workflow.whenToUse;
-  elements.workflowPreviewOutput.textContent = workflow.output;
-  elements.workflowPreviewSteps.innerHTML = renderWorkflowSteps(workflow.steps, linkedPrompts);
-}
-
-export function toggleEmptyState(elements, showEmpty, activeWorkflow) {
+export function toggleEmptyState(elements, showEmpty) {
   elements.emptyState.classList.toggle("hidden", !showEmpty);
   elements.promptGrid.classList.toggle("hidden", showEmpty);
-
-  if (activeWorkflow && activeWorkflow.id !== "all" && activeWorkflow.promptCount === 0) {
-    elements.emptyStateTitle.textContent = "This workflow is guide-only right now.";
-    elements.emptyStateMessage.textContent =
-      "Use the guide above, or clear the workflow filter to return to all prompts.";
-    return;
-  }
 
   elements.emptyStateTitle.textContent = "Nothing fits that search yet.";
   elements.emptyStateMessage.textContent =
     "Try another keyword, clear the active filters, or expand the library in admin mode.";
+}
+
+export function toggleWorkflowEmptyState(elements, showEmpty) {
+  elements.workflowEmptyState.classList.toggle("hidden", !showEmpty);
+  elements.workflowList.classList.toggle("hidden", showEmpty);
 }
 
 export function openModal(modal, focusTarget) {
