@@ -26,9 +26,11 @@ import {
   focusPromptForm,
   markCopied,
   openModal,
+  renderActiveFilters,
   renderAdminList,
   renderFilters,
   renderPrompts,
+  renderWorkflowPreview,
   renderWorkflowFilters,
   resetPromptForm,
   showToast,
@@ -81,17 +83,19 @@ function bindEvents() {
     render();
   });
 
+  elements.activeFilterBar.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-clear-filter]");
+    if (!button) {
+      return;
+    }
+
+    clearFilter(button.dataset.clearFilter);
+  });
+
   elements.promptGrid.addEventListener("click", async (event) => {
     const copyButton = event.target.closest("[data-copy-id]");
     if (copyButton) {
-      const prompt = state.prompts.find((item) => item.id === copyButton.dataset.copyId);
-      if (!prompt) {
-        return;
-      }
-
-      await copyText(prompt.body);
-      markCopied(copyButton);
-      showToast(elements, "Prompt copied");
+      await copyPromptById(copyButton.dataset.copyId, copyButton);
       return;
     }
 
@@ -105,7 +109,7 @@ function bindEvents() {
       return;
     }
 
-    openPromptDetail(prompt);
+    openPromptDetail(prompt, state.activeWorkflowId !== "all" ? state.activeWorkflowId : "");
   });
 
   elements.promptGrid.addEventListener("keydown", (event) => {
@@ -128,7 +132,11 @@ function bindEvents() {
       return;
     }
 
-    openPromptDetail(prompt);
+    openPromptDetail(prompt, state.activeWorkflowId !== "all" ? state.activeWorkflowId : "");
+  });
+
+  elements.workflowGuidePreview.addEventListener("click", async (event) => {
+    await handleWorkflowPromptAction(event, state.activeWorkflowId, false);
   });
 
   elements.activeWorkflowButton.addEventListener("click", () => {
@@ -283,16 +291,20 @@ function bindEvents() {
   });
 
   elements.promptDetailCopyButton.addEventListener("click", async () => {
-    const prompt = state.prompts.find(
-      (item) => item.id === elements.promptDetailCopyButton.dataset.copyPromptId,
+    await copyPromptById(
+      elements.promptDetailCopyButton.dataset.copyPromptId,
+      elements.promptDetailCopyButton,
     );
-    if (!prompt) {
+  });
+
+  elements.promptDetailBackWorkflowButton.addEventListener("click", () => {
+    const workflowId = elements.promptDetailBackWorkflowButton.dataset.workflowId;
+    if (!workflowId) {
       return;
     }
 
-    await copyText(prompt.body);
-    markCopied(elements.promptDetailCopyButton);
-    showToast(elements, "Prompt copied");
+    closeModal(elements.promptDetailModal);
+    openWorkflowDetail(workflowId);
   });
 
   elements.promptDetailModal.addEventListener("click", (event) => {
@@ -305,19 +317,8 @@ function bindEvents() {
     openWorkflowDetail(button.dataset.openWorkflowId);
   });
 
-  elements.workflowDetailModal.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-open-prompt-id]");
-    if (!button) {
-      return;
-    }
-
-    const prompt = state.prompts.find((item) => item.id === button.dataset.openPromptId);
-    if (!prompt) {
-      return;
-    }
-
-    closeModal(elements.workflowDetailModal);
-    openPromptDetail(prompt);
+  elements.workflowDetailModal.addEventListener("click", async (event) => {
+    await handleWorkflowPromptAction(event, elements.workflowDetailModal.dataset.workflowId, true);
   });
 
   document.addEventListener("click", (event) => {
@@ -367,8 +368,19 @@ function bindEvents() {
 function render() {
   const categories = deriveCategories(state.prompts);
   const workflows = deriveWorkflows(state.prompts, state.workflows);
-  const activeWorkflow =
+  const activeWorkflowFilter =
     workflows.find((workflow) => workflow.id === state.activeWorkflowId) || workflows[0];
+  const activeWorkflow =
+    activeWorkflowFilter.id === "all"
+      ? activeWorkflowFilter
+      : {
+          ...state.workflows.find((workflow) => workflow.id === activeWorkflowFilter.id),
+          promptCount: activeWorkflowFilter.promptCount,
+        };
+  const activeWorkflowPrompts =
+    activeWorkflow.id === "all"
+      ? []
+      : getWorkflowPrompts(activeWorkflow.id, state.prompts, state.workflows);
   const filteredPrompts = filterPrompts(
     state.prompts,
     state.query,
@@ -379,7 +391,9 @@ function render() {
 
   renderWorkflowFilters(elements, workflows, activeWorkflow.id);
   renderFilters(elements, categories, state.activeCategory);
-  renderPrompts(elements, filteredPrompts);
+  renderActiveFilters(elements, state, activeWorkflow);
+  renderPrompts(elements, filteredPrompts, state.workflows);
+  renderWorkflowPreview(elements, activeWorkflow, activeWorkflowPrompts);
   renderAdminList(elements, [...state.prompts].sort(sortByUpdatedAt));
   updateSummary(
     elements,
@@ -389,7 +403,7 @@ function render() {
     activeWorkflow,
   );
   updateWorkflowSummary(elements, workflows, activeWorkflow);
-  toggleEmptyState(elements, filteredPrompts.length === 0);
+  toggleEmptyState(elements, filteredPrompts.length === 0, activeWorkflow);
 }
 
 function syncAdminVisibility() {
@@ -433,6 +447,23 @@ function removePrompt(promptId) {
   showToast(elements, `${prompt?.title || "Prompt"} deleted`);
 }
 
+function clearFilter(filterType) {
+  if (filterType === "query" || filterType === "all") {
+    state.query = "";
+    elements.searchInput.value = "";
+  }
+
+  if (filterType === "workflow" || filterType === "all") {
+    state.activeWorkflowId = "all";
+  }
+
+  if (filterType === "category" || filterType === "all") {
+    state.activeCategory = "All";
+  }
+
+  render();
+}
+
 function runPaletteCommand(commandId) {
   const command = getPaletteCommand(commandId);
   if (!command) {
@@ -457,9 +488,13 @@ function closeAdminMode() {
   showToast(elements, "Admin mode closed");
 }
 
-function openPromptDetail(prompt) {
+function openPromptDetail(prompt, workflowContextId = "") {
   const relatedWorkflows = getPromptWorkflows(prompt.id, state.workflows);
-  fillPromptDetail(elements, prompt, relatedWorkflows);
+  const workflowContext =
+    workflowContextId && workflowContextId !== "all"
+      ? state.workflows.find((workflow) => workflow.id === workflowContextId)
+      : null;
+  fillPromptDetail(elements, prompt, relatedWorkflows, workflowContext);
   openModal(elements.promptDetailModal, elements.promptDetailCloseButton);
 }
 
@@ -470,8 +505,46 @@ function openWorkflowDetail(workflowId) {
   }
 
   const linkedPrompts = getWorkflowPrompts(workflowId, state.prompts, state.workflows);
+  elements.workflowDetailModal.dataset.workflowId = workflowId;
   fillWorkflowDetail(elements, workflow, linkedPrompts);
   openModal(elements.workflowDetailModal, elements.workflowDetailCloseButton);
+}
+
+async function handleWorkflowPromptAction(event, workflowId, closeWorkflowModal) {
+  const copyButton = event.target.closest("[data-copy-prompt-id]");
+  if (copyButton) {
+    await copyPromptById(copyButton.dataset.copyPromptId, copyButton);
+    return;
+  }
+
+  const openButton = event.target.closest("[data-open-prompt-id]");
+  if (!openButton) {
+    return;
+  }
+
+  const prompt = state.prompts.find((item) => item.id === openButton.dataset.openPromptId);
+  if (!prompt) {
+    return;
+  }
+
+  if (closeWorkflowModal) {
+    closeModal(elements.workflowDetailModal);
+  }
+
+  openPromptDetail(prompt, workflowId);
+}
+
+async function copyPromptById(promptId, button) {
+  const prompt = state.prompts.find((item) => item.id === promptId);
+  if (!prompt) {
+    return;
+  }
+
+  await copyText(prompt.body);
+  if (button) {
+    markCopied(button);
+  }
+  showToast(elements, "Prompt copied");
 }
 
 function sortByUpdatedAt(a, b) {

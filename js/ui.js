@@ -9,9 +9,16 @@ export function createAppElements() {
     workflowFilters: document.querySelector("#workflowFilters"),
     workflowSummary: document.querySelector("#workflowSummary"),
     activeWorkflowButton: document.querySelector("#activeWorkflowButton"),
+    workflowGuidePreview: document.querySelector("#workflowGuidePreview"),
+    workflowPreviewWhenToUse: document.querySelector("#workflowPreviewWhenToUse"),
+    workflowPreviewOutput: document.querySelector("#workflowPreviewOutput"),
+    workflowPreviewSteps: document.querySelector("#workflowPreviewSteps"),
     categoryFilters: document.querySelector("#categoryFilters"),
+    activeFilterBar: document.querySelector("#activeFilterBar"),
     promptGrid: document.querySelector("#promptGrid"),
     emptyState: document.querySelector("#emptyState"),
+    emptyStateTitle: document.querySelector("#emptyStateTitle"),
+    emptyStateMessage: document.querySelector("#emptyStateMessage"),
     themeToggle: document.querySelector("#themeToggle"),
     themeToggleLabel: document.querySelector("#themeToggleLabel"),
     toast: document.querySelector("#toast"),
@@ -48,6 +55,7 @@ export function createAppElements() {
     promptDetailBody: document.querySelector("#promptDetailBody"),
     promptDetailWorkflows: document.querySelector("#promptDetailWorkflows"),
     promptDetailWorkflowList: document.querySelector("#promptDetailWorkflowList"),
+    promptDetailBackWorkflowButton: document.querySelector("#promptDetailBackWorkflowButton"),
     promptDetailCopyButton: document.querySelector("#promptDetailCopyButton"),
     workflowDetailModal: document.querySelector("#workflowDetailModal"),
     workflowDetailCloseButton: document.querySelector("#workflowDetailCloseButton"),
@@ -98,10 +106,47 @@ export function renderWorkflowFilters(elements, workflows, activeWorkflowId) {
     .join("");
 }
 
-export function renderPrompts(elements, prompts) {
+export function renderActiveFilters(elements, state, activeWorkflow) {
+  const filters = [];
+
+  if (state.query) {
+    filters.push({ type: "query", label: `Search: ${state.query}` });
+  }
+
+  if (activeWorkflow && activeWorkflow.id !== "all") {
+    filters.push({ type: "workflow", label: `Workflow: ${activeWorkflow.name}` });
+  }
+
+  if (state.activeCategory && state.activeCategory !== "All") {
+    filters.push({ type: "category", label: `Category: ${state.activeCategory}` });
+  }
+
+  elements.activeFilterBar.classList.toggle("hidden", filters.length === 0);
+  elements.activeFilterBar.innerHTML =
+    filters.length === 0
+      ? ""
+      : `
+        ${filters
+          .map(
+            (filter) => `
+              <button class="active-filter-chip" type="button" data-clear-filter="${filter.type}">
+                ${escapeHtml(filter.label)} <span aria-hidden="true">x</span>
+              </button>
+            `,
+          )
+          .join("")}
+        <button class="text-button active-filter-clear" type="button" data-clear-filter="all">
+          Clear All
+        </button>
+      `;
+}
+
+export function renderPrompts(elements, prompts, workflows) {
   elements.promptGrid.innerHTML = prompts
     .map(
-      (prompt) => `
+      (prompt) => {
+        const relatedWorkflows = getPromptWorkflows(prompt.id, workflows);
+        return `
         <article
           class="prompt-card"
           data-prompt-id="${prompt.id}"
@@ -117,6 +162,7 @@ export function renderPrompts(elements, prompts) {
             <h3>${escapeHtml(prompt.title)}</h3>
             <p class="prompt-description">${escapeHtml(prompt.description)}</p>
           </div>
+          ${renderWorkflowMembership(relatedWorkflows)}
           <p class="prompt-snippet">${escapeHtml(prompt.body)}</p>
           <div class="prompt-footer">
             <div class="tag-list">
@@ -130,7 +176,8 @@ export function renderPrompts(elements, prompts) {
             </button>
           </div>
         </article>
-      `,
+      `;
+      },
     )
     .join("");
 }
@@ -181,7 +228,7 @@ export function updateWorkflowSummary(elements, workflows, activeWorkflow) {
   if (activeWorkflow && activeWorkflow.id !== "all") {
     elements.workflowSummary.textContent = activeWorkflow.summary;
     elements.activeWorkflowButton.classList.remove("hidden");
-    elements.activeWorkflowButton.textContent = "View workflow guide";
+    elements.activeWorkflowButton.textContent = "Open Full Guide";
     elements.activeWorkflowButton.dataset.workflowId = activeWorkflow.id;
     return;
   }
@@ -194,14 +241,42 @@ export function updateWorkflowSummary(elements, workflows, activeWorkflow) {
   elements.activeWorkflowButton.dataset.workflowId = "";
 }
 
-export function toggleEmptyState(elements, showEmpty) {
+export function renderWorkflowPreview(elements, workflow, linkedPrompts) {
+  const showPreview = Boolean(workflow && workflow.id !== "all");
+
+  elements.workflowGuidePreview.classList.toggle("hidden", !showPreview);
+  if (!showPreview) {
+    elements.workflowPreviewWhenToUse.textContent = "";
+    elements.workflowPreviewOutput.textContent = "";
+    elements.workflowPreviewSteps.innerHTML = "";
+    return;
+  }
+
+  elements.workflowPreviewWhenToUse.textContent = workflow.whenToUse;
+  elements.workflowPreviewOutput.textContent = workflow.output;
+  elements.workflowPreviewSteps.innerHTML = renderWorkflowSteps(workflow.steps, linkedPrompts);
+}
+
+export function toggleEmptyState(elements, showEmpty, activeWorkflow) {
   elements.emptyState.classList.toggle("hidden", !showEmpty);
   elements.promptGrid.classList.toggle("hidden", showEmpty);
+
+  if (activeWorkflow && activeWorkflow.id !== "all" && activeWorkflow.promptCount === 0) {
+    elements.emptyStateTitle.textContent = "This workflow is guide-only right now.";
+    elements.emptyStateMessage.textContent =
+      "Use the guide above, or clear the workflow filter to return to all prompts.";
+    return;
+  }
+
+  elements.emptyStateTitle.textContent = "Nothing fits that search yet.";
+  elements.emptyStateMessage.textContent =
+    "Try another keyword, clear the active filters, or expand the library in admin mode.";
 }
 
 export function openModal(modal, focusTarget) {
   modal.classList.remove("hidden");
   modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("is-modal-open");
   if (focusTarget) {
     requestAnimationFrame(() => focusTarget.focus());
   }
@@ -210,6 +285,8 @@ export function openModal(modal, focusTarget) {
 export function closeModal(modal) {
   modal.classList.add("hidden");
   modal.setAttribute("aria-hidden", "true");
+  const visibleModal = document.querySelector(".modal:not(.hidden)");
+  document.body.classList.toggle("is-modal-open", Boolean(visibleModal));
 }
 
 export function fillPromptForm(elements, prompt) {
@@ -257,7 +334,7 @@ export function markCopied(button) {
   }, 1300);
 }
 
-export function fillPromptDetail(elements, prompt, relatedWorkflows) {
+export function fillPromptDetail(elements, prompt, relatedWorkflows, workflowContext) {
   elements.promptDetailCategory.textContent = prompt.category;
   elements.promptDetailShortcut.classList.toggle("hidden", !prompt.shortcut);
   elements.promptDetailShortcut.textContent = prompt.shortcut || "";
@@ -265,6 +342,11 @@ export function fillPromptDetail(elements, prompt, relatedWorkflows) {
   elements.promptDetailDescription.textContent = prompt.description;
   elements.promptDetailBody.textContent = prompt.body;
   elements.promptDetailCopyButton.dataset.copyPromptId = prompt.id;
+  elements.promptDetailBackWorkflowButton.classList.toggle("hidden", !workflowContext);
+  elements.promptDetailBackWorkflowButton.dataset.workflowId = workflowContext?.id || "";
+  elements.promptDetailBackWorkflowButton.textContent = workflowContext
+    ? `Back to ${workflowContext.name}`
+    : "Back to Workflow";
 
   const tags = Array.isArray(prompt.tags) ? prompt.tags : [];
   elements.promptDetailTags.classList.toggle("hidden", tags.length === 0);
@@ -292,29 +374,7 @@ export function fillWorkflowDetail(elements, workflow, linkedPrompts) {
   elements.workflowDetailInputs.innerHTML = workflow.inputs
     .map((input) => `<li>${escapeHtml(input)}</li>`)
     .join("");
-  elements.workflowDetailSteps.innerHTML = workflow.steps
-    .map((step, index) => {
-      const linkedPrompt = linkedPrompts.find((prompt) => prompt.id === step.promptId);
-
-      return `
-        <li class="workflow-step">
-          <div class="workflow-step-copy">
-            <p class="workflow-step-title">${index + 1}. ${escapeHtml(step.title)}</p>
-            <p>${escapeHtml(step.instruction)}</p>
-          </div>
-          ${
-            linkedPrompt
-              ? `
-                <button class="workflow-link" type="button" data-open-prompt-id="${linkedPrompt.id}">
-                  ${escapeHtml(linkedPrompt.title)}
-                </button>
-              `
-              : ""
-          }
-        </li>
-      `;
-    })
-    .join("");
+  elements.workflowDetailSteps.innerHTML = renderWorkflowSteps(workflow.steps, linkedPrompts);
   elements.workflowDetailPrompts.innerHTML =
     linkedPrompts.length > 0
       ? linkedPrompts
@@ -335,6 +395,54 @@ function renderShortcutBadge(shortcut) {
   }
 
   return `<span class="shortcut-badge">${escapeHtml(shortcut)}</span>`;
+}
+
+function renderWorkflowMembership(workflows) {
+  if (workflows.length === 0) {
+    return "";
+  }
+
+  const label =
+    workflows.length === 1 ? `Used in ${workflows[0].name}` : `Used in ${workflows.length} workflows`;
+
+  return `<p class="workflow-membership">${escapeHtml(label)}</p>`;
+}
+
+function renderWorkflowSteps(steps, linkedPrompts) {
+  return steps
+    .map((step, index) => {
+      const linkedPrompt = linkedPrompts.find((prompt) => prompt.id === step.promptId);
+
+      return `
+        <li class="workflow-step">
+          <div class="workflow-step-copy">
+            <p class="workflow-step-title">${index + 1}. ${escapeHtml(step.title)}</p>
+            <p>${escapeHtml(step.instruction)}</p>
+          </div>
+          ${
+            linkedPrompt
+              ? `
+                <div class="workflow-step-actions">
+                  <button class="workflow-link" type="button" data-open-prompt-id="${linkedPrompt.id}">
+                    View Prompt
+                  </button>
+                  <button class="workflow-link secondary" type="button" data-copy-prompt-id="${linkedPrompt.id}">
+                    Copy Prompt
+                  </button>
+                </div>
+              `
+              : ""
+          }
+        </li>
+      `;
+    })
+    .join("");
+}
+
+function getPromptWorkflows(promptId, workflows) {
+  return workflows.filter((workflow) =>
+    workflow.steps.some((step) => step.promptId && step.promptId === promptId),
+  );
 }
 
 function escapeHtml(value) {

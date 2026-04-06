@@ -22,7 +22,7 @@ export function deriveWorkflows(prompts, workflows) {
   const promptIds = new Set(prompts.map((prompt) => prompt.id));
 
   return [
-    { id: "all", name: "All workflows", promptCount: prompts.length },
+    { id: "all", name: "All prompts", promptCount: prompts.length },
     ...workflows
       .map((workflow) => ({
         id: workflow.id,

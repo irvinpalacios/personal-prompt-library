@@ -56,7 +56,7 @@
               type="search"
               autocomplete="off"
               spellcheck="false"
-              placeholder="Search prompts, tags, categories, or prompt text..."
+              placeholder="Search prompts, workflows, tags, or prompt text..."
             />
           </label>
           <p class="toolbar-caption" id="resultSummary">Loading prompts...</p>
@@ -74,16 +74,42 @@
           </div>
           <section class="filters workflow-filters" id="workflowFilters" aria-label="Workflow filters"></section>
           <p class="workflow-caption" id="workflowSummary">Loading workflows...</p>
+          <section class="workflow-guide-preview hidden" id="workflowGuidePreview" aria-live="polite">
+            <div class="workflow-preview-grid">
+              <div>
+                <p class="eyebrow">When to use it</p>
+                <p id="workflowPreviewWhenToUse"></p>
+              </div>
+              <div>
+                <p class="eyebrow">Expected output</p>
+                <p id="workflowPreviewOutput"></p>
+              </div>
+            </div>
+            <div class="workflow-preview-steps">
+              <div class="detail-section-header">
+                <div>
+                  <p class="eyebrow">Next steps</p>
+                  <h4>Run the workflow</h4>
+                </div>
+              </div>
+              <ol class="workflow-step-list compact" id="workflowPreviewSteps"></ol>
+            </div>
+          </section>
         </section>
 
-        <section class="filters" id="categoryFilters" aria-label="Prompt filters"></section>
+        <section class="filter-group" aria-label="Category filters">
+          <p class="eyebrow">Categories</p>
+          <section class="filters category-filters" id="categoryFilters" aria-label="Prompt filters"></section>
+        </section>
+
+        <section class="active-filter-bar hidden" id="activeFilterBar" aria-label="Active filters"></section>
 
         <section class="prompt-grid" id="promptGrid" aria-live="polite"></section>
 
         <section class="empty-state hidden" id="emptyState">
           <p class="empty-eyebrow">No matches</p>
-          <h3>Nothing fits that search yet.</h3>
-          <p>
+          <h3 id="emptyStateTitle">Nothing fits that search yet.</h3>
+          <p id="emptyStateMessage">
             Try another keyword, clear the active category, or expand the
             library in admin mode.
           </p>
@@ -274,6 +300,9 @@
         </section>
         <div class="prompt-detail-body" id="promptDetailBody"></div>
         <div class="prompt-detail-actions">
+          <button class="secondary-button hidden" type="button" id="promptDetailBackWorkflowButton">
+            Back to Workflow
+          </button>
           <button class="primary-button" type="button" id="promptDetailCopyButton">
             Copy Prompt
           </button>
