@@ -1,17 +1,19 @@
-import { DEFAULT_THEME, STORAGE_KEYS, STORAGE_VERSION, seedPrompts } from "./data.js";
+import {
+  DEFAULT_THEME,
+  STORAGE_KEYS,
+  STORAGE_VERSION,
+  clonePublishedPrompts,
+  publishedPrompts,
+} from "./data.js";
 
-const seedPromptsById = new Map(seedPrompts.map((prompt) => [prompt.id, prompt]));
-
-function cloneSeedPrompts() {
-  return seedPrompts.map((prompt) => ({ ...prompt, tags: [...prompt.tags] }));
-}
+const publishedPromptsById = new Map(publishedPrompts.map((prompt) => [prompt.id, prompt]));
 
 function normalizePrompt(prompt) {
-  const seedPrompt = seedPromptsById.get(prompt?.id);
+  const publishedPrompt = publishedPromptsById.get(prompt?.id);
 
   return {
     ...prompt,
-    shortcut: String(prompt?.shortcut ?? seedPrompt?.shortcut ?? "").trim(),
+    shortcut: String(prompt?.shortcut ?? publishedPrompt?.shortcut ?? "").trim(),
     tags: Array.isArray(prompt?.tags) ? prompt.tags.map((tag) => String(tag)) : [],
   };
 }
@@ -27,19 +29,22 @@ function safeParse(value, fallback) {
 export function loadPrompts() {
   const raw = safeParse(localStorage.getItem(STORAGE_KEYS.prompts), null);
 
-  if (!raw || raw.version !== STORAGE_VERSION || !Array.isArray(raw.items)) {
-    const seed = cloneSeedPrompts();
-    savePrompts(seed);
-    return seed;
+  if (
+    !raw ||
+    raw.version !== STORAGE_VERSION ||
+    !Array.isArray(raw.items) ||
+    !Array.isArray(raw.deletedIds)
+  ) {
+    return clonePublishedPrompts();
   }
 
-  return raw.items.map(normalizePrompt);
+  return mergePrompts(raw.items.map(normalizePrompt), raw.deletedIds.map((id) => String(id)));
 }
 
 export function savePrompts(prompts) {
   const payload = {
     version: STORAGE_VERSION,
-    items: prompts,
+    ...buildDraftPayload(prompts),
   };
 
   localStorage.setItem(STORAGE_KEYS.prompts, JSON.stringify(payload));
@@ -59,4 +64,43 @@ export function loadAdminSession() {
 
 export function saveAdminSession(isActive) {
   localStorage.setItem(STORAGE_KEYS.adminSession, String(isActive));
+}
+
+function mergePrompts(draftPrompts, deletedIds) {
+  const mergedPrompts = clonePublishedPrompts().filter((prompt) => !deletedIds.includes(prompt.id));
+  const mergedById = new Map(mergedPrompts.map((prompt) => [prompt.id, prompt]));
+
+  draftPrompts.forEach((prompt) => {
+    mergedById.set(prompt.id, { ...prompt, tags: [...prompt.tags] });
+  });
+
+  return Array.from(mergedById.values());
+}
+
+function buildDraftPayload(prompts) {
+  const nextPrompts = prompts.map(normalizePrompt);
+  const nextPromptsById = new Map(nextPrompts.map((prompt) => [prompt.id, prompt]));
+  const deletedIds = publishedPrompts
+    .filter((prompt) => !nextPromptsById.has(prompt.id))
+    .map((prompt) => prompt.id);
+  const items = nextPrompts.filter((prompt) => {
+    const publishedPrompt = publishedPromptsById.get(prompt.id);
+    return !publishedPrompt || !arePromptsEqual(prompt, normalizePrompt(publishedPrompt));
+  });
+
+  return { items, deletedIds };
+}
+
+function arePromptsEqual(a, b) {
+  return (
+    a.id === b.id &&
+    a.title === b.title &&
+    a.category === b.category &&
+    a.shortcut === b.shortcut &&
+    a.description === b.description &&
+    a.body === b.body &&
+    a.createdAt === b.createdAt &&
+    a.updatedAt === b.updatedAt &&
+    JSON.stringify(a.tags) === JSON.stringify(b.tags)
+  );
 }

@@ -1,5 +1,12 @@
 import { createPromptRecord, validatePromptRecord, verifyAdminPassword } from "./admin.js";
-import { deriveCategories, filterPrompts } from "./filters.js";
+import { clonePublishedWorkflows } from "./data.js";
+import {
+  deriveCategories,
+  deriveWorkflows,
+  filterPrompts,
+  getPromptWorkflows,
+  getWorkflowPrompts,
+} from "./filters.js";
 import { getPaletteCommand } from "./palette.js";
 import {
   loadAdminSession,
@@ -15,24 +22,29 @@ import {
   createAppElements,
   fillPromptForm,
   fillPromptDetail,
+  fillWorkflowDetail,
   focusPromptForm,
   markCopied,
   openModal,
   renderAdminList,
   renderFilters,
   renderPrompts,
+  renderWorkflowFilters,
   resetPromptForm,
   showToast,
   toggleEmptyState,
   updateSummary,
+  updateWorkflowSummary,
 } from "./ui.js";
 
 const elements = createAppElements();
 
 const state = {
   prompts: loadPrompts(),
+  workflows: clonePublishedWorkflows(),
   query: "",
   activeCategory: "All",
+  activeWorkflowId: "all",
   theme: loadTheme(),
   isAdmin: loadAdminSession(),
   editingPromptId: null,
@@ -56,6 +68,16 @@ function bindEvents() {
     }
 
     state.activeCategory = button.dataset.category;
+    render();
+  });
+
+  elements.workflowFilters.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-workflow-id]");
+    if (!button) {
+      return;
+    }
+
+    state.activeWorkflowId = button.dataset.workflowId;
     render();
   });
 
@@ -107,6 +129,15 @@ function bindEvents() {
     }
 
     openPromptDetail(prompt);
+  });
+
+  elements.activeWorkflowButton.addEventListener("click", () => {
+    const workflowId = elements.activeWorkflowButton.dataset.workflowId;
+    if (!workflowId) {
+      return;
+    }
+
+    openWorkflowDetail(workflowId);
   });
 
   elements.themeToggle.addEventListener("click", () => {
@@ -264,6 +295,31 @@ function bindEvents() {
     showToast(elements, "Prompt copied");
   });
 
+  elements.promptDetailModal.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-open-workflow-id]");
+    if (!button) {
+      return;
+    }
+
+    closeModal(elements.promptDetailModal);
+    openWorkflowDetail(button.dataset.openWorkflowId);
+  });
+
+  elements.workflowDetailModal.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-open-prompt-id]");
+    if (!button) {
+      return;
+    }
+
+    const prompt = state.prompts.find((item) => item.id === button.dataset.openPromptId);
+    if (!prompt) {
+      return;
+    }
+
+    closeModal(elements.workflowDetailModal);
+    openPromptDetail(prompt);
+  });
+
   document.addEventListener("click", (event) => {
     const closeTarget = event.target.closest("[data-close]");
     if (!closeTarget) {
@@ -303,18 +359,36 @@ function bindEvents() {
       closeModal(elements.adminLoginModal);
       closeModal(elements.commandPaletteModal);
       closeModal(elements.promptDetailModal);
+      closeModal(elements.workflowDetailModal);
     }
   });
 }
 
 function render() {
   const categories = deriveCategories(state.prompts);
-  const filteredPrompts = filterPrompts(state.prompts, state.query, state.activeCategory);
+  const workflows = deriveWorkflows(state.prompts, state.workflows);
+  const activeWorkflow =
+    workflows.find((workflow) => workflow.id === state.activeWorkflowId) || workflows[0];
+  const filteredPrompts = filterPrompts(
+    state.prompts,
+    state.query,
+    state.activeCategory,
+    activeWorkflow.id,
+    state.workflows,
+  );
 
+  renderWorkflowFilters(elements, workflows, activeWorkflow.id);
   renderFilters(elements, categories, state.activeCategory);
   renderPrompts(elements, filteredPrompts);
   renderAdminList(elements, [...state.prompts].sort(sortByUpdatedAt));
-  updateSummary(elements, state.prompts.length, filteredPrompts.length);
+  updateSummary(
+    elements,
+    state.prompts.length,
+    filteredPrompts.length,
+    state.activeCategory,
+    activeWorkflow,
+  );
+  updateWorkflowSummary(elements, workflows, activeWorkflow);
   toggleEmptyState(elements, filteredPrompts.length === 0);
 }
 
@@ -384,8 +458,20 @@ function closeAdminMode() {
 }
 
 function openPromptDetail(prompt) {
-  fillPromptDetail(elements, prompt);
+  const relatedWorkflows = getPromptWorkflows(prompt.id, state.workflows);
+  fillPromptDetail(elements, prompt, relatedWorkflows);
   openModal(elements.promptDetailModal, elements.promptDetailCloseButton);
+}
+
+function openWorkflowDetail(workflowId) {
+  const workflow = state.workflows.find((item) => item.id === workflowId);
+  if (!workflow) {
+    return;
+  }
+
+  const linkedPrompts = getWorkflowPrompts(workflowId, state.prompts, state.workflows);
+  fillWorkflowDetail(elements, workflow, linkedPrompts);
+  openModal(elements.workflowDetailModal, elements.workflowDetailCloseButton);
 }
 
 function sortByUpdatedAt(a, b) {
