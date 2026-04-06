@@ -115,7 +115,12 @@ export function renderWorkflowList(elements, workflows) {
             <p class="eyebrow">Expected output</p>
             <p>${escapeHtml(workflow.output)}</p>
           </div>
-          <button class="primary-button" type="button" data-start-workflow-id="${workflow.id}">
+          <button
+            class="primary-button"
+            type="button"
+            data-start-workflow-id="${workflow.id}"
+            aria-label="Start workflow ${escapeHtml(workflow.name)}"
+          >
             Start Workflow
           </button>
         </article>
